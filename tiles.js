@@ -8,7 +8,7 @@
  * - Dot, Bamboo, Character, Wind and Dragon SVGs from: 
  *   https://github.com/FluffyStuff/riichi-mahjong-tiles
  * - Season and Flowers SVGs modified from Jerry Crimson Mann originals at Wikimedia
- *   https://en.wikipedia.org/wiki/Mahjong_tiles)
+ *   https://en.wikipedia.org/wiki/Mahjong_tiles
  * 
  * Nodes:
  * - A tile type is identified by it's key, but matches are checked by the group
