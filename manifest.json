@@ -1,0 +1,15 @@
+{
+    "name": "Mahjong Solitarie Classic",
+    "short_name": "Mahjong",
+    "theme_color": "#A0CAB5",
+    "background_color": "#A0CAB5",
+    "display": "standalone",
+    "start_url": "/",
+    "icons": [
+      {
+        "src": "img/icon.png",
+        "sizes": "96x96",
+        "type": "image/png"
+      }
+    ]
+  }

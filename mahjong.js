@@ -91,6 +91,7 @@ function generateRandomTilesArray() {
         for(var j=0; j<TILES_TYPES[key].count; j++){
             // the tile initial state
             tiles.push({
+                id: key+"_"+j,
                 tileType: TILES_TYPES[key],
                 x: undefined,
                 y: undefined,
@@ -151,6 +152,10 @@ function isTileBelowAnother(tile) {
             (board[pZ + 1][pY][pX] || board[pZ + 1][pY][pX + 1])) ||
         (board[pZ + 1][pY + 1] && // check next line
             (board[pZ + 1][pY + 1][pX] || board[pZ + 1][pY + 1][pX + 1])));
+}
+
+function isGameSolvabe(){
+
 }
 
 function isTileBetweenOthers(tile) {
@@ -241,10 +246,10 @@ function onResize() {
 // refresh canvas size and calculate tile dimensions to fit the window
 function calculateDimensions(){
     
+    // resize canvas to fit width/height keeping the 16/9 ratio
     var width = window.innerWidth;
     var height = window.innerHeight;
-    var ratio = width/height;
-    console.log(width, height, ratio);
+    var ratio = width/height;    
     if(ratio >= 16/9){
         canvas.height = height;
         canvas.width = height * 16/9;        
@@ -259,15 +264,24 @@ function calculateDimensions(){
     gameState.tileThickness = gameState.tileWidth / 8 * gameState.ratio;    
 }
 
-function calculateMovesLeft(){
-    //TODO: improve complexity
-    var freeTiles = gameState.tiles.filter((p) => isTileFree(p, gameState.board));        
-    var movesCount = 0;
+function generateMovesLeft(){
+    var freeTiles = gameState.tiles.filter((t) => isTileFree(t, gameState.board));        
+    var moves = new Map();
     freeTiles.forEach((current) => {
-        movesCount += freeTiles.filter((other) => current != other 
-            && other.tileType.group == current.tileType.group).length;
+        var matches = freeTiles.filter((other) => current != other 
+            && other.tileType.group == current.tileType.group);
+        matches.forEach((match) => {
+            if(!moves.has(current.id+"-"+match.id) &&
+               !moves.has(match.id+"-"+current.id)){
+                moves.set(current.id+"-"+match.id,[current, match])
+            }
+        })
     });
-    gameState.movesAvailable = movesCount/2;
+    return moves;
+}
+
+function calculateMovesLeft(){    
+    gameState.movesAvailable = generateMovesLeft().size;        
 }
 
 function update() {
@@ -276,7 +290,7 @@ function update() {
 
     // tile removal animation
     gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
-        tile.alpha = tile.alpha - 0.085;
+        tile.alpha = tile.alpha - 0.1;
         if (tile.alpha < 0.01) {
             tile.alpha = 0;
         }        
