@@ -235,7 +235,7 @@ function removeFromBoard(tile) {
 
 function onResize() {
     calculateDimensions();
-    updateAndRender();
+    draw();
 }
 
 // refresh canvas size and calculate tile dimensions to fit the window
@@ -270,9 +270,20 @@ function calculateMovesLeft(){
     gameState.movesAvailable = movesCount/2;
 }
 
-function updateAndRender() {
+function update() {
 
     updateCursorTile();
+
+    // tile removal animation
+    gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
+        tile.alpha = tile.alpha * 0.8;
+        if (tile.alpha < 0.01) {
+            tile.alpha = 0;
+        }        
+    });
+}
+
+function draw() {    
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -293,18 +304,10 @@ function updateAndRender() {
     var tileHeight = gameState.tileHeight;
     var tileThickness = gameState.tileThickness;
     gameState.tiles.forEach((tile) => {        
-        if (tile.alpha > 0)
+        if (tile.alpha > 0) {
 
-            ctx.lineWidth = 0.1; {
-
-            // tile removal animation
-            if (tile.removed) {
-                tile.alpha = tile.alpha * 0.8;
-                if (tile.alpha < 0.01) {
-                    tile.alpha = 0;
-                }
-            }
             ctx.globalAlpha = tile.alpha;
+            ctx.lineWidth = 0.1;
 
             // translate to the tile position
             var pZ = (tile.z + 1) * tileThickness;
@@ -398,8 +401,7 @@ function loadAndRun() {
         // keeps loading...
         setTimeout(loadAndRun, 100);        
     }else{
-        // update/re-render at 30 fps    
-        setInterval(updateAndRender, 1000 / 30);
+        Loop.run({ draw: draw, update: update });
     }
 }
 
