@@ -276,7 +276,7 @@ function update() {
 
     // tile removal animation
     gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
-        tile.alpha = tile.alpha * 0.8;
+        tile.alpha = tile.alpha - 0.085;
         if (tile.alpha < 0.01) {
             tile.alpha = 0;
         }        
