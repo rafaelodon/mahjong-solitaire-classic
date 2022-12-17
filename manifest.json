@@ -4,7 +4,8 @@
     "theme_color": "#A0CAB5",
     "background_color": "#A0CAB5",
     "display": "standalone",
-    "start_url": "/",
+    "orientation": "landscape",
+    "start_url": "/mahjong-solitarie-classic",
     "icons": [
       {
         "src": "img/icon.png",
