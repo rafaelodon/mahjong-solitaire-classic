@@ -240,8 +240,18 @@ function onResize() {
 
 // refresh canvas size and calculate tile dimensions to fit the window
 function calculateDimensions(){
-    canvas.width = document.body.clientWidth;
-    canvas.height = document.body.clientHeight;
+    
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var ratio = width/height;
+    console.log(width, height, ratio);
+    if(ratio >= 16/9){
+        canvas.height = height;
+        canvas.width = height * 16/9;        
+    }else{        
+        canvas.width = width;
+        canvas.height = width * 9/16;        
+    }
 
     gameState.ratio = canvas.height / canvas.width;
     gameState.tileWidth = canvas.width / MAX_X * 1.8;
@@ -359,6 +369,9 @@ function updateAndRender() {
         }
     });
 }
+
+// hide address bar on mobile
+setTimeout(() => window.scrollTo(0, 1), 50);
 
 var gameState = initGameWithClassicDisposition();
 calculateMovesLeft();
