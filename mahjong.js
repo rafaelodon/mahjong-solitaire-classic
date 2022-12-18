@@ -73,13 +73,14 @@ function initGameWithClassicDisposition() {
     // return the game state
     return {
         starTime: undefined, // starts after first "click"
+        ellapsedSeconds: 0,
         board: dist.board,
         tiles: dist.tiles,
         tilesMap: Object.fromEntries(dist.tiles.map((t) => [t.id, t])),
         movesStack: [],
         cursor: undefined,
         cursorTile: undefined,
-        selectedTile: undefined
+        selectedTile: undefined,
     }
 }
 
@@ -370,24 +371,21 @@ function draw() {
 
     ctx.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0);
     ctx.globalAlpha = 1.0;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);    
-            
-    var fontSize = gameState.tileHeight/3/PIXEL_RATIO;
-    ctx.font = fontSize+"px sans-serif";
-    ctx.fillStyle = "black";
-
+    ctx.clearRect(0, 0, canvas.width, canvas.height);            
 
     // ellapsed time
     if(gameState.ellapsedSeconds != undefined){
-        ctx.fillText(gameState.ellapsedSeconds+ "s", fontSize/2, fontSize);
+        document.getElementById("time").innerText = "🕑 "+gameState.ellapsedSeconds+ " s";
     }
 
     // moves left            
     if(gameState.movesAvailable != undefined){                                        
         if(gameState.movesAvailable > 0){
-            ctx.fillText("Moves available: "+gameState.movesAvailable, fontSize/2+100, fontSize);
-        }else{
-            ctx.fillText("Game over! Refresh (F5) to restart the game. ", fontSize/2+100, fontSize);
+            document.getElementById("moves").innerText = "Moves available: "+gameState.movesAvailable;
+        }else if(gameState.else){
+            document.getElementById("moves").innerText = "Game Over...";
+        }else {
+            document.getElementById("moves").innerText = "Congratulations!";
         }
     }
 
