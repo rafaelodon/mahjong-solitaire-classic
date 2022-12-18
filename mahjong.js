@@ -209,7 +209,7 @@ function updateCursorTile() {
 // check if they are a pair to be removed from the board.
 function selectCursorTile() {    
     // tile pair check
-    if(gameState.cursorTile){
+    if(gameState.movesAvailable > 0 && gameState.cursorTile){
         if (gameState.selectedTile &&
             gameState.cursorTile != gameState.selectedTile &&
             gameState.cursorTile.tileType.group == gameState.selectedTile.tileType.group) {
@@ -296,6 +296,10 @@ function update() {
 
     updateCursorTile();
 
+    if(gameState.movesAvailable > 0){
+        gameState.ellapsedSeconds = Math.round((Date.now() - gameState.starTime) / 1000);
+    }
+    
     // tile removal animation
     gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
         tile.alpha = tile.alpha - 0.1;
@@ -310,17 +314,23 @@ function draw() {
     ctx.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0);
     ctx.globalAlpha = 1.0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);    
-    
+            
+    var fontSize = gameState.tileHeight/3/PIXEL_RATIO;
+    ctx.font = fontSize+"px sans-serif";
+    ctx.fillStyle = "black";
+
+
+    // ellapsed time
+    if(gameState.ellapsedSeconds != undefined){
+        ctx.fillText(gameState.ellapsedSeconds+ "s", fontSize/2, fontSize);
+    }
 
     // moves left            
-    if(gameState.movesAvailable != undefined){                        
-        var size = gameState.tileHeight/3/PIXEL_RATIO;
-        ctx.font = size+"px sans-serif";
-        ctx.fillStyle = "black";
+    if(gameState.movesAvailable != undefined){                                        
         if(gameState.movesAvailable > 0){
-            ctx.fillText("Moves available: "+gameState.movesAvailable, size/2, size);
+            ctx.fillText("Moves available: "+gameState.movesAvailable, fontSize/2+100, fontSize);
         }else{
-            ctx.fillText("Game over! Refresh (F5) to restart the game. ", size/2, size);
+            ctx.fillText("Game over! Refresh (F5) to restart the game. ", fontSize/2+100, fontSize);
         }
     }
 
@@ -406,13 +416,17 @@ var canvas = document.getElementById("canvas");
 canvas.addEventListener("mousemove", onMouseMove);
 canvas.addEventListener("mousedown", onMouseDown);
 canvas.addEventListener("mouseout", onMouseOut);
+canvas.addEventListener("touchend", onMouseOut);
 window.addEventListener("resize", onResize);
 calculateDimensions();
 
 document.getElementById("btnNewGame").addEventListener("click", ()=>{
     var newGame = initGameWithClassicDisposition();
     gameState.board = newGame.board;
-    gameState.tiles = newGame.tiles;
+    gameState.tiles = newGame.tiles;    
+    gameState.cursorTile = undefined;
+    gameState.selectedTile = undefined;     
+    gameState.starTime = Date.now();
     calculateMovesLeft();    
 });
 
