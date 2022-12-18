@@ -20,10 +20,8 @@ var MAX_X = 30; // twice the number of cols
 
 var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
 
-function initGameWithClassicDisposition() {
-
-    // TODO: generate only solvables boards...    
-
+function distributeTilesClassicBoard() {
+     
     var tiles = generateRandomTilesArray();    
     var board = generateEmptyBoard();
 
@@ -61,13 +59,24 @@ function initGameWithClassicDisposition() {
     fillBoard(board, tilesStack, 3, 15, 5, 15, 0);
     fillBoard(board, tilesStack, 23, 15, 25, 15, 0);
 
-    sortTilesInRenderingOrder(tiles);
+    return {
+        board: board,
+        tiles: tiles
+    }
+}
+
+function initGameWithClassicDisposition() {    
+           
+    dist = distributeTilesClassicBoard();
+    sortTilesInRenderingOrder(dist.tiles);    
 
     // return the game state
     return {
-        starTime: Date.now(),
-        board: board,
-        tiles: tiles,
+        starTime: undefined, // starts after first "click"
+        board: dist.board,
+        tiles: dist.tiles,
+        tilesMap: Object.fromEntries(dist.tiles.map((t) => [t.id, t])),
+        movesStack: [],
         cursor: undefined,
         cursorTile: undefined,
         selectedTile: undefined
@@ -126,6 +135,35 @@ function fillBoard(board, tiles, x1, y1, x2, y2, z) {
     }
 }
 
+// recursive brute-force search
+function isBoardSolvabe(board, tiles, state={undos:0}){        
+
+    //if all tiles are removed, the game was solved
+    if(tiles.filter((t) => t.removed != true).length == 0){        
+        return true;        
+    }
+
+    if(state.undos > 5000){
+        return false;
+    }
+
+    var movesLeft = Array.from(generateMovesLeft(tiles, board).values());        
+    while(movesLeft.length > 0){
+        var move = movesLeft.pop();                 
+        removeFromBoard(move[0], board);
+        removeFromBoard(move[1], board);        
+        if(isBoardSolvabe(board, tiles, state)){
+            return true;
+        }else{
+            state.undos++;
+            addTileBack(board, move[0]);
+            addTileBack(board, move[1]);
+        }
+    }
+
+    return false;    
+}
+
 // Sorts the tiles in rendereing order (top-bottom, left-right, down-up)
 function sortTilesInRenderingOrder(tiles) {
     tiles.sort(function (a, b) {
@@ -154,10 +192,6 @@ function isTileBelowAnother(tile) {
             (board[pZ + 1][pY][pX] || board[pZ + 1][pY][pX + 1])) ||
         (board[pZ + 1][pY + 1] && // check next line
             (board[pZ + 1][pY + 1][pX] || board[pZ + 1][pY + 1][pX + 1])));
-}
-
-function isGameSolvabe(){
-
 }
 
 function isTileBetweenOthers(tile) {
@@ -193,8 +227,7 @@ function updateCursorTile() {
             var cY = Math.floor((gameState.cursor.y - (cZ + 1) * gameState.tileThickness - gameState.tileThickness) / gameState.tileHeight * 2);
             if (cX >= 0 && cY >= 0 && cY < MAX_Y && cX <= MAX_X) {
                 var tile = gameState.board[cZ][cY][cX];                
-                if (isTileFree(tile, gameState.board)) {
-                    console.log(tile);
+                if (isTileFree(tile, gameState.board)) {                    
                     gameState.cursorTile = tile;
                     break;
                 } else {
@@ -215,7 +248,9 @@ function selectCursorTile() {
             gameState.cursorTile.tileType.group == gameState.selectedTile.tileType.group) {
                 SOUND_FX["vanish"].play();
                 removeFromBoard(gameState.selectedTile, gameState.board);
-                removeFromBoard(gameState.cursorTile, gameState.board);                                         
+                removeFromBoard(gameState.cursorTile, gameState.board);  
+                gameState.movesStack.push([gameState.selectedTile.id, gameState.cursorTile.id]);
+                console.log(gameState.movesStack);
                 gameState.selectedTile = undefined;
                 calculateMovesLeft();
                 return;
@@ -224,20 +259,25 @@ function selectCursorTile() {
         // if no removal happend, selects the cursor tile
         SOUND_FX["click"].play();
         gameState.selectedTile = gameState.cursorTile; 
+        
+        // starts timing
+        if(typeof gameState.starTime === "undefined"){
+            gameState.starTime = Date.now();
+        }
     }else{
         gameState.selectedTile = undefined;
     }              
 }
 
 // Remove a tile from the board
-function removeFromBoard(tile) {    
+function removeFromBoard(tile, board) {    
     var x = tile.x;
     var y = tile.y;
     var z = tile.z;
-    gameState.board[z][y][x] = undefined;
-    gameState.board[z][y + 1][x] = undefined;
-    gameState.board[z][y][x + 1] = undefined;
-    gameState.board[z][y + 1][x + 1] = undefined;
+    board[z][y][x] = undefined;
+    board[z][y + 1][x] = undefined;
+    board[z][y][x + 1] = undefined;
+    board[z][y + 1][x + 1] = undefined;
     tile.removed = true;
 }
 
@@ -272,8 +312,8 @@ function calculateDimensions(){
     gameState.tileThickness = gameState.tileWidth / 8 * gameState.ratio;    
 }
 
-function generateMovesLeft(){
-    var freeTiles = gameState.tiles.filter((t) => isTileFree(t, gameState.board));        
+function generateMovesLeft(tiles, board){
+    var freeTiles = tiles.filter((t) => isTileFree(t, board));        
     var moves = new Map();
     freeTiles.forEach((current) => {
         var matches = freeTiles.filter((other) => current != other 
@@ -288,15 +328,32 @@ function generateMovesLeft(){
     return moves;
 }
 
+function undoLastMove(board, tilesMap, movesStack){
+    var lastMove = movesStack.pop();    
+    if(lastMove){
+        lastMove.forEach((tileId) => {
+            var tile = tilesMap[tileId];
+            addTileBack(board, tile);
+        });
+    }
+}
+
+function addTileBack(board, tile){    
+    tile.removed = false;
+    tile.alpha = 1.0;
+    fillBoard(board, [tile], tile.x, tile.y, tile.x+1, tile.y+1, tile.z);
+}
+
 function calculateMovesLeft(){    
-    gameState.movesAvailable = generateMovesLeft().size;        
+    gameState.movesAvailable = generateMovesLeft(gameState.tiles, gameState.board).size;        
 }
 
 function update() {
 
     updateCursorTile();
 
-    if(gameState.movesAvailable > 0){
+    // ellapsed seconds
+    if(gameState.movesAvailable > 0 && gameState.starTime){
         gameState.ellapsedSeconds = Math.round((Date.now() - gameState.starTime) / 1000);
     }
     
@@ -420,14 +477,14 @@ canvas.addEventListener("touchend", onMouseOut);
 window.addEventListener("resize", onResize);
 calculateDimensions();
 
-document.getElementById("btnNewGame").addEventListener("click", ()=>{
-    var newGame = initGameWithClassicDisposition();
-    gameState.board = newGame.board;
-    gameState.tiles = newGame.tiles;    
-    gameState.cursorTile = undefined;
-    gameState.selectedTile = undefined;     
-    gameState.starTime = Date.now();
+document.getElementById("btnNewGame").addEventListener("click", ()=>{    
+    Object.assign(gameState, initGameWithClassicDisposition());        
     calculateMovesLeft();    
+});
+
+document.getElementById("btnUndo").addEventListener("click", ()=>{
+    undoLastMove(gameState.board, gameState.tilesMap, gameState.movesStack);
+    calculateMovesLeft();
 });
 
 // 2d context
