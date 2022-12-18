@@ -18,6 +18,8 @@ var MAX_Z = 5; // the number of tiles levels + 1
 var MAX_Y = 17; // twice the number of rows + 1
 var MAX_X = 30; // twice the number of cols
 
+var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
+
 function initGameWithClassicDisposition() {
 
     // TODO: generate only solvables boards...    
@@ -167,8 +169,8 @@ function isTileBetweenOthers(tile) {
 function onMouseMove(e) {
     e.stopPropagation();
     gameState.cursor = {
-        x: e.offsetX,
-        y: e.offsetY
+        x: e.offsetX * PIXEL_RATIO,
+        y: e.offsetY * PIXEL_RATIO 
     };
 }
 
@@ -190,8 +192,9 @@ function updateCursorTile() {
             var cX = Math.floor((gameState.cursor.x - (cZ + 1) * gameState.tileThickness - gameState.tileThickness) / gameState.tileWidth * 2);
             var cY = Math.floor((gameState.cursor.y - (cZ + 1) * gameState.tileThickness - gameState.tileThickness) / gameState.tileHeight * 2);
             if (cX >= 0 && cY >= 0 && cY < MAX_Y && cX <= MAX_X) {
-                var tile = gameState.board[cZ][cY][cX];
+                var tile = gameState.board[cZ][cY][cX];                
                 if (isTileFree(tile, gameState.board)) {
+                    console.log(tile);
                     gameState.cursorTile = tile;
                     break;
                 } else {
@@ -246,16 +249,21 @@ function onResize() {
 // refresh canvas size and calculate tile dimensions to fit the window
 function calculateDimensions(){
     
-    // resize canvas to fit width/height keeping the 16/9 ratio
+    // resize canvas to fit width/height keeping the 16/9 ratio    
     var width = window.innerWidth;
     var height = window.innerHeight;
     var ratio = width/height;    
+    
     if(ratio >= 16/9){
-        canvas.height = height;
-        canvas.width = height * 16/9;        
+        canvas.height = height * PIXEL_RATIO;
+        canvas.width = height * 16/9 * PIXEL_RATIO;        
+        canvas.style.height = (height)+"px"
+        canvas.style.width = (height * 16/9)+"px";
     }else{        
-        canvas.width = width;
-        canvas.height = width * 9/16;        
+        canvas.width = width * PIXEL_RATIO;
+        canvas.height = width * 9/16 * PIXEL_RATIO;        
+        canvas.style.width = (width)+"px"
+        canvas.style.height = (width * 9/16)+"px";
     }
 
     gameState.ratio = canvas.height / canvas.width;
@@ -299,11 +307,14 @@ function update() {
 
 function draw() {    
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0);
+    ctx.globalAlpha = 1.0;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);    
+    
 
     // moves left            
     if(gameState.movesAvailable != undefined){                        
-        var size = gameState.tileHeight/4;
+        var size = gameState.tileHeight/3/PIXEL_RATIO;
         ctx.font = size+"px sans-serif";
         ctx.fillStyle = "black";
         if(gameState.movesAvailable > 0){
@@ -320,6 +331,7 @@ function draw() {
     gameState.tiles.forEach((tile) => {        
         if (tile.alpha > 0) {
 
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.globalAlpha = tile.alpha;
             ctx.lineWidth = 0.1;
 
@@ -378,11 +390,7 @@ function draw() {
             ctx.stroke();
             
             // tile image
-            ctx.drawImage(tile.tileType.image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);            
-            
-            // reset global changes
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.globalAlpha = 1.0;
+            ctx.drawImage(tile.tileType.image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);                                    
         }
     });
 }
@@ -400,6 +408,13 @@ canvas.addEventListener("mousedown", onMouseDown);
 canvas.addEventListener("mouseout", onMouseOut);
 window.addEventListener("resize", onResize);
 calculateDimensions();
+
+document.getElementById("btnNewGame").addEventListener("click", ()=>{
+    var newGame = initGameWithClassicDisposition();
+    gameState.board = newGame.board;
+    gameState.tiles = newGame.tiles;
+    calculateMovesLeft();    
+});
 
 // 2d context
 var ctx = canvas.getContext("2d");

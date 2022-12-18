@@ -3,7 +3,7 @@
     <head>
         <meta charset=utf-8>
         <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1"/>
-        <link rel="manifest" href="manifest.json">    
+        <link rel="manifest" href="manifest.json?v=1.0.0">    
         <title>Mahjong Solitarie Classic by Rafael Odon</title>
         <style>
             html,
@@ -22,12 +22,35 @@
                 align-items: center; 
                 justify-content: center;
             }            
+            #topbar{
+                position: absolute;                
+                top: 0;
+                text-align: right;
+                width: 100%;
+                margin-top: 0.2em;
+                margin-right: 0.2em;                
+            }
+            button{
+                border: 0px;
+                border-radius: 1em;                
+                padding: 0.4em 1em 0.4em 1em;
+                font-family: sans-serif;
+                background: #FFF;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+            button:hover{
+                background: #BDAEC6;
+            }
         </style>
     </head>
 
     <body>
-        <div id="container">
-            <canvas id="canvas"></canvas>
+        <div id="container">            
+            <canvas id="canvas"></canvas>            
+            <div id="topbar">                
+                <button id="btnNewGame">New Game</button>                
+            </div>
         </div>
     </body>
     
@@ -35,5 +58,4 @@
     <script src="tiles.js"></script>
     <script src="loop.js"></script>
     <script src="mahjong.js"></script>
-
 </html>
