@@ -17,14 +17,15 @@ body {
 #topbar{
     position: absolute;
     width: 100%;       
-    height: 5vh;     
+    height: 8vh;     
+    line-height: 8vh;
     top: 0;                
     width: 100%;                
     background: black;  
     font-family: sans-serif;
     font-weight: bold;                
-    font-size: 2.5vh;             
-    line-height: 5vh;                
+    font-size: 4vh;             
+    
 }
 
 #topbar>div{
@@ -34,31 +35,99 @@ body {
 #moves, #time{
     float: left;
     color: #FFF;
-    margin-left: 2vh;
-    width: 30vh;
-
+    margin-left: 2vw;
+    width: 33vw;
 }
 
 #buttons{
-    width: 30vh;
+    width: 29vw;
     float: right;
     text-align: right;
 }
 button{
     border: 0px;
     border-radius: 1em;                
-    margin: 0.5vh;
+    margin: 0vh 1vh 0vh 0vh;
     padding: 0.5vh 2vh 0.5vh 2vh;                
     background: #FFF;                                            
-    height: 4.0vh;
+    height: 6.5vh;
     font-family: sans-serif;
     font-weight: bold;
     text-transform: uppercase;
-    font-size: 2.5vh;                
+    font-size: 3vh;                
 }
 button:hover{
     background: #BDAEC6;
 }
 canvas{                
-    margin-top: 5vh;
+    margin-top: 8vh;
+}
+
+#modal {
+    display: flex;    
+    
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;    
+    align-items: center; 
+    justify-content: center;
+}
+
+#modalBackground{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    opacity: 0.5; 
+    z-index: 99998;
+}
+
+#modalWindow{    
+    position: absolute;
+    width: 50%;
+    height: 20%;
+    margin: 0 auto;    
+    background: #FFF;    
+    border-radius: 4vh;
+    font-family: sans-serif;
+    z-index: 99999;
+    box-shadow: 1vh 1vh 1vh rgba(0, 0, 0, 0.5);
+    text-align: center;
+    padding: 1vh;
+}
+
+#modalHeader{
+    font-weight: bold;
+    font-size: 4vh;
+    margin-bottom: 1vh;
+}
+
+#modalBody{
+    font-size: 3vh;
+    margin-bottom: 1vh;
+}
+
+#modal button{
+    background-color: #BDAEC6;
+}
+
+#modal button:hover{
+    background-color: #999;
+    cursor: pointer;
+}
+
+.modalVisible {    
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.2s linear;
+}
+  
+.modalHidden {
+    visibility: hidden;    
+    opacity: 0;
+    transition: visibility 0.2s, opacity 0.2s linear;
 }

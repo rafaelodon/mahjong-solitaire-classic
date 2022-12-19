@@ -9,8 +9,8 @@
         </style>
     </head>
 
-    <body>
-        <div id="container">            
+    <body>        
+        <div id="container">                      
             <div id="topbar">   
                 <div id="moves"></div>
                 <div id="time"></div>
@@ -19,10 +19,22 @@
                     <button id="btnNewGame">★ New</button>
                 </div>
             </div>
-            <canvas id="canvas"></canvas>                        
-        </div>
+            <canvas id="canvas"></canvas>                                    
+        </div>        
+        <div id="modal" class="modalHidden">                        
+            <div id="modalBackground"></div>
+            <div id="modalWindow">                
+                <div id="modalHeader">Modal</div>                
+                <div id="modalBody">Mensagem</div>
+                <div id="modalFooter">
+                    <button id="modalOkButton">Ok</button>
+                    <button id="modalCancelButton">Cancel</button>
+                </div>
+            </div>            
+        </div>  
     </body>
     
+    <script src="modal.js"></script>
     <script src="audio.js"></script>
     <script src="tiles.js"></script>
     <script src="loop.js"></script>

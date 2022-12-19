@@ -140,7 +140,7 @@ function fillBoard(board, tiles, x1, y1, x2, y2, z) {
 function isBoardSolvabe(board, tiles, state={undos:0}){        
 
     //if all tiles are removed, the game was solved
-    if(tiles.filter((t) => t.removed != true).length == 0){        
+    if(isGameFinished(tiles)){        
         return true;        
     }
 
@@ -307,6 +307,7 @@ function calculateDimensions(){
         canvas.style.height = (width * 9/16)+"px";
     }
 
+
     gameState.ratio = canvas.height / canvas.width;
     gameState.tileWidth = canvas.width / MAX_X * 1.8;
     gameState.tileHeight = gameState.tileWidth * gameState.ratio * 1.8;
@@ -349,6 +350,10 @@ function calculateMovesLeft(){
     gameState.movesAvailable = generateMovesLeft(gameState.tiles, gameState.board).size;        
 }
 
+function isGameFinished(tiles){
+    return gameState.tiles.filter((t) => t.removed != true).length == 0;
+}
+
 function update() {
 
     updateCursorTile();
@@ -382,10 +387,10 @@ function draw() {
     if(gameState.movesAvailable != undefined){                                        
         if(gameState.movesAvailable > 0){
             document.getElementById("moves").innerText = "Moves available: "+gameState.movesAvailable;
-        }else if(gameState.else){
-            document.getElementById("moves").innerText = "Game Over...";
+        }else if(isGameFinished(gameState.tiles)){
+            document.getElementById("moves").innerText = "🏆 Congratulations!";            
         }else {
-            document.getElementById("moves").innerText = "Congratulations!";
+            document.getElementById("moves").innerText = "💀 Game Over...";
         }
     }
 
@@ -476,8 +481,11 @@ window.addEventListener("resize", onResize);
 calculateDimensions();
 
 document.getElementById("btnNewGame").addEventListener("click", ()=>{    
-    Object.assign(gameState, initGameWithClassicDisposition());        
-    calculateMovesLeft();    
+    new Modal("New Game","Restart the game and shuffe the tiles?",
+        () => {
+            Object.assign(gameState, initGameWithClassicDisposition());        
+            calculateMovesLeft();    
+        });
 });
 
 document.getElementById("btnUndo").addEventListener("click", ()=>{
