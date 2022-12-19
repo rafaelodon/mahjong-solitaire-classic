@@ -67,7 +67,12 @@ function distributeTilesClassicBoard() {
 
 function initGameWithClassicDisposition() {    
            
-    dist = distributeTilesClassicBoard();
+    // generate a solvable tiles distribution
+    var dist = distributeTilesClassicBoard();    
+    while(!isBoardSolvabe(dist.board, dist.tiles)){
+        dist = distributeTilesClassicBoard();        
+    }
+    
     sortTilesInRenderingOrder(dist.tiles);    
 
     // return the game state
@@ -81,6 +86,7 @@ function initGameWithClassicDisposition() {
         cursor: undefined,
         cursorTile: undefined,
         selectedTile: undefined,
+        hint: []
     }
 }
 
@@ -136,24 +142,55 @@ function fillBoard(board, tiles, x1, y1, x2, y2, z) {
     }
 }
 
+function getAdjacentTiles(tile, board){
+    var adjacents = [];        
+    var left = board[tile.z][tile.y][tile.x-1];
+    if(left) adjacents.push(left);
+
+    var right = board[tile.z][tile.y][tile.x+2];
+    if(right) adjacents.push(right);
+    
+    if(tile.z > 0){
+        var belowNW = board[tile.z-1][tile.y][tile.x-1];
+        if(belowNW) adjacents.push(belowNW);
+
+        var belowNE = board[tile.z-1][tile.y][tile.x+2];
+        if(belowNE) adjacents.push(belowNE);
+
+        var belowSW = board[tile.z-1][tile.y+2][tile.x-1];
+        if(belowSW) adjacents.push(belowSW);
+
+        var belowSE = board[tile.z-1][tile.y+2][tile.x+2];
+        if(belowSE) adjacents.push(belowSE);
+    }
+
+    return adjacents;
+}
+
 // recursive brute-force search
-function isBoardSolvabe(board, tiles, state={undos:0}){        
+function isBoardSolvabe(board, tiles, state={undos:0, recursions:0}){        
 
     //if all tiles are removed, the game was solved
     if(isGameFinished(tiles)){        
         return true;        
     }
-
-    if(state.undos > 5000){
+    
+    if(state.undos > 1000){
         return false;
     }
 
-    var movesLeft = Array.from(generateMovesLeft(tiles, board).values());        
+    var movesLeft = generateBestMovesLeft(tiles, board);
+
     while(movesLeft.length > 0){
-        var move = movesLeft.pop();                 
+        var move = movesLeft.pop();        
         removeFromBoard(move[0], board);
-        removeFromBoard(move[1], board);        
+        removeFromBoard(move[1], board);
+        move[0].removed=true;
+        move[1].removed=true;
+        state.recursions++;       
         if(isBoardSolvabe(board, tiles, state)){
+            addTileBack(board, move[0]);
+            addTileBack(board, move[1]);
             return true;
         }else{
             state.undos++;
@@ -163,6 +200,37 @@ function isBoardSolvabe(board, tiles, state={undos:0}){
     }
 
     return false;    
+}
+
+function shallowCopyBoard(board){
+    return Array.isArray(board) ? board.map(shallowCopyBoard) : board;
+}
+
+function generateBestMovesLeft(tiles, board){
+    
+    var movesLeft = Array.from(generateMovesLeft(tiles, board).values());     
+
+    // sort descending by number of adjacent future free tiles
+    movesLeft.sort((m1, m2) => getMoveProfit(m2, board) - getMoveProfit(m1, board));
+    
+    return movesLeft;
+}
+
+function getMoveProfit(move, board){
+    var t1Adjacents = getAdjacentTiles(move[0], board);
+    var t2Adjacents = getAdjacentTiles(move[1], board);    
+    var adjacents = [].concat(t1Adjacents, t2Adjacents);
+    
+    // remove duplicates
+    adjacents = adjacents.filter((a, i) => adjacents.indexOf(a) === i);
+
+    // keep only future free tiles
+    var newBoard = shallowCopyBoard(board);
+    removeFromBoard(move[0], newBoard);
+    removeFromBoard(move[1], newBoard);
+    adjacents = adjacents.filter((t) => isTileFree(t, newBoard));
+
+    return adjacents.length;
 }
 
 // Sorts the tiles in rendereing order (top-bottom, left-right, down-up)
@@ -175,18 +243,17 @@ function sortTilesInRenderingOrder(tiles) {
     })      
 }
 
-function isTileFree(tile) {
+function isTileFree(tile, board) {
     return tile &&
         !tile.removed &&
-        !isTileBelowAnother(tile) &&
-        !isTileBetweenOthers(tile);
+        !isTileBelowAnother(tile, board) &&
+        !isTileBetweenOthers(tile, board);
 }
 
-function isTileBelowAnother(tile) {
+function isTileBelowAnother(tile, board) {
     var pX = tile.x;
     var pY = tile.y;
-    var pZ = tile.z;
-    var board = gameState.board;
+    var pZ = tile.z;    
 
     return board[pZ + 1] && // the board has a level above        
         ((board[pZ + 1][pY] && // check same line
@@ -195,8 +262,7 @@ function isTileBelowAnother(tile) {
             (board[pZ + 1][pY + 1][pX] || board[pZ + 1][pY + 1][pX + 1])));
 }
 
-function isTileBetweenOthers(tile) {
-    var board = gameState.board;
+function isTileBetweenOthers(tile, board) {    
     return (board[tile.z][tile.y][tile.x - 1] || board[tile.z][tile.y + 1][tile.x - 1]) && // tile to the left
         (board[tile.z][tile.y][tile.x + 2] || board[tile.z][tile.y + 1][tile.x + 2]); // tile to right
 }
@@ -247,19 +313,28 @@ function selectCursorTile() {
         if (gameState.selectedTile &&
             gameState.cursorTile != gameState.selectedTile &&
             gameState.cursorTile.tileType.group == gameState.selectedTile.tileType.group) {
+
                 SOUND_FX["vanish"].play();
+
                 removeFromBoard(gameState.selectedTile, gameState.board);
-                removeFromBoard(gameState.cursorTile, gameState.board);  
+                removeFromBoard(gameState.cursorTile, gameState.board); 
+
+                gameState.selectedTile.removed = true;
+                gameState.cursorTile.removed = true;
+
                 gameState.movesStack.push([gameState.selectedTile.id, gameState.cursorTile.id]);
-                console.log(gameState.movesStack);
+                
                 gameState.selectedTile = undefined;
+
                 calculateMovesLeft();
+                
                 return;
             }                 
             
         // if no removal happend, selects the cursor tile
         SOUND_FX["click"].play();
         gameState.selectedTile = gameState.cursorTile; 
+        gameState.hint = [];
         
         // starts timing
         if(typeof gameState.starTime === "undefined"){
@@ -267,6 +342,7 @@ function selectCursorTile() {
         }
     }else{
         gameState.selectedTile = undefined;
+
     }              
 }
 
@@ -278,8 +354,7 @@ function removeFromBoard(tile, board) {
     board[z][y][x] = undefined;
     board[z][y + 1][x] = undefined;
     board[z][y][x + 1] = undefined;
-    board[z][y + 1][x + 1] = undefined;
-    tile.removed = true;
+    board[z][y + 1][x + 1] = undefined;    
 }
 
 function onResize() {
@@ -351,7 +426,7 @@ function calculateMovesLeft(){
 }
 
 function isGameFinished(tiles){
-    return gameState.tiles.filter((t) => t.removed != true).length == 0;
+    return tiles.filter((t) => t.removed != true).length == 0;
 }
 
 function update() {
@@ -386,7 +461,7 @@ function draw() {
     // moves left            
     if(gameState.movesAvailable != undefined){                                        
         if(gameState.movesAvailable > 0){
-            document.getElementById("moves").innerText = "Moves available: "+gameState.movesAvailable;
+            document.getElementById("moves").innerText = "Free tiles: "+gameState.movesAvailable;
         }else if(isGameFinished(gameState.tiles)){
             document.getElementById("moves").innerText = "🏆 Congratulations!";            
         }else {
@@ -453,7 +528,9 @@ function draw() {
                 ctx.fillStyle = "#7ABA7A";
             } else if (tile == gameState.cursorTile) {
                 ctx.fillStyle = "#BDAEC6";
-            } else {
+            } else if (gameState.hint.includes(tile)) {
+                ctx.fillStyle = "#FFCF79";
+            }else {
                 ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
             }
             ctx.fill();
@@ -484,13 +561,18 @@ document.getElementById("btnNewGame").addEventListener("click", ()=>{
     new Modal("New Game","Restart the game and shuffe the tiles?",
         () => {
             Object.assign(gameState, initGameWithClassicDisposition());        
-            calculateMovesLeft();    
+            calculateMovesLeft();
         });
 });
 
 document.getElementById("btnUndo").addEventListener("click", ()=>{
     undoLastMove(gameState.board, gameState.tilesMap, gameState.movesStack);
     calculateMovesLeft();
+});
+
+document.getElementById("btnHint").addEventListener("click", ()=>{
+    var moves = generateBestMovesLeft(gameState.tiles, gameState.board);
+    gameState.hint = [moves[0][0], moves[0][1]];
 });
 
 // 2d context
