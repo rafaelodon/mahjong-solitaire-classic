@@ -9,20 +9,21 @@
         </style>
     </head>
 
-    <body>        
-        <div id="container">                      
-            <div id="topbar">   
+    <body>                
+        <div id="loader" class="lds-dual-ring"></div>
+        <div id="container" class="animatedHidden">                                  
+            <div id="topbar">                   
                 <div id="moves"></div>
-                <div id="time"></div>
-                <div id="buttons">
+                <div id="time"></div>                                
+                <div class="buttons">                    
                     <button id="btnHint">☚ Hint</button>
                     <button id="btnUndo">↻ Undo</button>
-                    <button id="btnNewGame">★ New</button>
-                </div>
+                    <button id="btnNewGame">★ New</button>                    
+                </div>                
             </div>
             <canvas id="canvas"></canvas>                                    
         </div>        
-        <div id="modal" class="modalHidden">                        
+        <div id="modal" class="animatedHidden">                        
             <div id="modalBackground"></div>
             <div id="modalWindow">                
                 <div id="modalHeader">Modal</div>                

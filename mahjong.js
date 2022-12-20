@@ -22,11 +22,13 @@ var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
 
 function distributeTilesClassicBoard() {
      
-    var tiles = generateRandomTilesArray();    
+    var tilesMap = generateTilesMap();    
     var board = generateEmptyBoard();
 
-    // a shallow copy to unstack tiles while filling the board
-    var tilesStack = tiles.map((x) => x); 
+    // a random stack of tiles to be unstacked while filling the board
+    var tilesStack = Object.values(tilesMap)
+    tilesStack.sort((a, b) => 0.5 - Math.random());    
+;
 
     //central stacked rectangles
     fillBoard(board, tilesStack, 7, 1, 21, 15, 0);
@@ -61,7 +63,7 @@ function distributeTilesClassicBoard() {
 
     return {
         board: board,
-        tiles: tiles
+        tilesMap: tilesMap
     }
 }
 
@@ -69,24 +71,24 @@ function initGameWithClassicDisposition() {
            
     // generate a solvable tiles distribution
     var dist = distributeTilesClassicBoard();    
-    while(!isBoardSolvabe(dist.board, dist.tiles)){
+    while(!isBoardSolvabe(dist.tilesMap, dist.board)){
         dist = distributeTilesClassicBoard();        
-    }
-    
-    sortTilesInRenderingOrder(dist.tiles);    
+    }    
+
+    console.log(dist);
 
     // return the game state
-    return {
-        starTime: undefined, // starts after first "click"
-        ellapsedSeconds: 0,
+    return {        
+        tilesMap: dist.tilesMap,
         board: dist.board,
-        tiles: dist.tiles,
-        tilesMap: Object.fromEntries(dist.tiles.map((t) => [t.id, t])),
+        tiles: Object.values(dist.tilesMap).sort(compareTilesByRenderOrder),        
         movesStack: [],
         cursor: undefined,
         cursorTile: undefined,
         selectedTile: undefined,
-        hint: []
+        hint: [],
+        starTime: undefined, // starts after first "click"
+        ellapsedSeconds: 0,
     }
 }
 
@@ -101,27 +103,25 @@ function generateEmptyBoard() {
     return board;
 }
 
-function generateRandomTilesArray() {
+function generateTilesMap() {
     
     // Generates a symbol sequence based on the listed tiles and theirs counts
-    var tiles = [];
+    var tiles = {};
     Object.keys(TILES_TYPES).forEach((key) => {        
         for(var j=0; j<TILES_TYPES[key].count; j++){
+            var id = key+"_"+j; 
             // the tile initial state
-            tiles.push({
-                id: key+"_"+j,
+            tiles[id] = {
+                id: id,
                 tileType: TILES_TYPES[key],
                 x: undefined,
                 y: undefined,
                 z: undefined,
                 removed: false,
                 alpha: 1,                
-            });
+            };
         }
     });
-
-    // Shuffle the symbols
-    tiles.sort((a, b) => 0.5 - Math.random());    
 
     return tiles;
 }
@@ -134,10 +134,10 @@ function fillBoard(board, tiles, x1, y1, x2, y2, z) {
             tile.x = x;
             tile.y = y;
             tile.z = z;                
-            board[z][y][x] = tile;
-            board[z][y + 1][x] = tile;
-            board[z][y][x + 1] = tile;
-            board[z][y + 1][x + 1] = tile;            
+            board[z][y][x] = tile.id;
+            board[z][y + 1][x] = tile.id;
+            board[z][y][x + 1] = tile.id;
+            board[z][y + 1][x + 1] = tile.id;            
         }
     }
 }
@@ -168,10 +168,10 @@ function getAdjacentTiles(tile, board){
 }
 
 // recursive brute-force search
-function isBoardSolvabe(board, tiles, state={undos:0, recursions:0}){        
+function isBoardSolvabe(tilesMap, board, state={undos:0, recursions:0}){        
 
     //if all tiles are removed, the game was solved
-    if(isGameFinished(tiles)){        
+    if(isGameFinished(Object.values(tilesMap))){        
         return true;        
     }
     
@@ -179,7 +179,7 @@ function isBoardSolvabe(board, tiles, state={undos:0, recursions:0}){
         return false;
     }
 
-    var movesLeft = generateBestMovesLeft(tiles, board);
+    var movesLeft = generateBestMovesLeft(tilesMap, board);
 
     while(movesLeft.length > 0){
         var move = movesLeft.pop();        
@@ -188,7 +188,7 @@ function isBoardSolvabe(board, tiles, state={undos:0, recursions:0}){
         move[0].removed=true;
         move[1].removed=true;
         state.recursions++;       
-        if(isBoardSolvabe(board, tiles, state)){
+        if(isBoardSolvabe(tilesMap, board, state)){
             addTileBack(board, move[0]);
             addTileBack(board, move[1]);
             return true;
@@ -206,17 +206,17 @@ function shallowCopyBoard(board){
     return Array.isArray(board) ? board.map(shallowCopyBoard) : board;
 }
 
-function generateBestMovesLeft(tiles, board){
+function generateBestMovesLeft(tilesMap, board){
     
-    var movesLeft = Array.from(generateMovesLeft(tiles, board).values());     
+    var movesLeft = Array.from(generateMovesLeft(tilesMap, board).values());     
 
     // sort descending by number of adjacent future free tiles
-    movesLeft.sort((m1, m2) => getMoveProfit(m2, board) - getMoveProfit(m1, board));
+    movesLeft.sort((m1, m2) => getMoveProfit(m2, board, tilesMap) - getMoveProfit(m1, board, tilesMap));
     
     return movesLeft;
 }
 
-function getMoveProfit(move, board){
+function getMoveProfit(move, board, tilesMap){
     var t1Adjacents = getAdjacentTiles(move[0], board);
     var t2Adjacents = getAdjacentTiles(move[1], board);    
     var adjacents = [].concat(t1Adjacents, t2Adjacents);
@@ -228,19 +228,17 @@ function getMoveProfit(move, board){
     var newBoard = shallowCopyBoard(board);
     removeFromBoard(move[0], newBoard);
     removeFromBoard(move[1], newBoard);
-    adjacents = adjacents.filter((t) => isTileFree(t, newBoard));
+    adjacents = adjacents.filter((t) => isTileFree(tilesMap[t], newBoard));
 
     return adjacents.length;
 }
 
 // Sorts the tiles in rendereing order (top-bottom, left-right, down-up)
-function sortTilesInRenderingOrder(tiles) {
-    tiles.sort(function (a, b) {
-        var rZ = a.z - b.z;
-        var rY = b.y - a.y;
-        var rX = b.x - a.x;
-        return rZ != 0 ? rZ : rX != 0 ? rX : rY
-    })      
+function compareTilesByRenderOrder(a,b) {    
+    var rZ = a.z - b.z;
+    var rY = b.y - a.y;
+    var rX = b.x - a.x;
+    return rZ != 0 ? rZ : rX != 0 ? rX : rY;          
 }
 
 function isTileFree(tile, board) {
@@ -293,7 +291,7 @@ function updateCursorTile() {
             var cX = Math.floor((gameState.cursor.x - (cZ + 1) * gameState.tileThickness - gameState.tileThickness) / gameState.tileWidth * 2);
             var cY = Math.floor((gameState.cursor.y - (cZ + 1) * gameState.tileThickness - gameState.tileThickness) / gameState.tileHeight * 2);
             if (cX >= 0 && cY >= 0 && cY < MAX_Y && cX <= MAX_X) {
-                var tile = gameState.board[cZ][cY][cX];                
+                var tile = gameState.tilesMap[gameState.board[cZ][cY][cX]];               
                 if (isTileFree(tile, gameState.board)) {                    
                     gameState.cursorTile = tile;
                     break;
@@ -369,19 +367,18 @@ function calculateDimensions(){
     var width = window.innerWidth;
     var height = window.innerHeight;
     var ratio = width/height;    
-    
-    if(ratio >= 16/9){
+
+    if(ratio >= 16/9){        
         canvas.height = height * PIXEL_RATIO;
         canvas.width = height * 16/9 * PIXEL_RATIO;        
         canvas.style.height = (height)+"px"
         canvas.style.width = (height * 16/9)+"px";
-    }else{        
+    }else{                       
         canvas.width = width * PIXEL_RATIO;
         canvas.height = width * 9/16 * PIXEL_RATIO;        
         canvas.style.width = (width)+"px"
         canvas.style.height = (width * 9/16)+"px";
     }
-
 
     gameState.ratio = canvas.height / canvas.width;
     gameState.tileWidth = canvas.width / MAX_X * 1.8;
@@ -389,8 +386,8 @@ function calculateDimensions(){
     gameState.tileThickness = gameState.tileWidth / 8 * gameState.ratio;    
 }
 
-function generateMovesLeft(tiles, board){
-    var freeTiles = tiles.filter((t) => isTileFree(t, board));        
+function generateMovesLeft(tilesMap, board){
+    var freeTiles = Object.values(tilesMap).filter((t) => isTileFree(t, board));        
     var moves = new Map();
     freeTiles.forEach((current) => {
         var matches = freeTiles.filter((other) => current != other 
@@ -422,7 +419,7 @@ function addTileBack(board, tile){
 }
 
 function calculateMovesLeft(){    
-    gameState.movesAvailable = generateMovesLeft(gameState.tiles, gameState.board).size;        
+    gameState.movesAvailable = generateMovesLeft(gameState.tilesMap, gameState.board).size;        
 }
 
 function isGameFinished(tiles){
@@ -449,7 +446,10 @@ function update() {
 
 function draw() {    
 
-    ctx.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if(canvas.height > canvas.width){
+        //ctx.rotate(90 * Math.PI / 180);
+    }
     ctx.globalAlpha = 1.0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);            
 
@@ -475,8 +475,8 @@ function draw() {
     var tileThickness = gameState.tileThickness;
     gameState.tiles.forEach((tile) => {        
         if (tile.alpha > 0) {
-
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+                        
+            ctx.setTransform(1, 0, 0, 1, 0, 0);            
             ctx.globalAlpha = tile.alpha;
             ctx.lineWidth = 0.1;
 
@@ -571,14 +571,12 @@ document.getElementById("btnUndo").addEventListener("click", ()=>{
 });
 
 document.getElementById("btnHint").addEventListener("click", ()=>{
-    var moves = generateBestMovesLeft(gameState.tiles, gameState.board);
+    var moves = generateBestMovesLeft(gameState.tilesMap, gameState.board);
     gameState.hint = [moves[0][0], moves[0][1]];
 });
 
 // 2d context
 var ctx = canvas.getContext("2d");
-ctx.font = "4em sans-serif";
-ctx.fillText("Loading...",canvas.width/3, canvas.height/2);
 
 function loadAndRun() {
                
@@ -588,8 +586,10 @@ function loadAndRun() {
     if(loadingTiles.length + loadingSoundFxs.length > 0){
         // keeps loading...
         setTimeout(loadAndRun, 100);        
-    }else{
+    }else{        
         Loop.run({ draw: draw, update: update });
+        document.getElementById("loader").className = "animatedHidden";
+        document.getElementById("container").className = "animatedVisible";
     }
 }
 

@@ -21,12 +21,12 @@ function Modal(title, body, okCallBack, cancelCallBack){
         if(callBack){
             callBack();
         }
-        modal.className = "modalHidden";
+        modal.className = "animatedHidden";
     }    
 
     modalHeader.textContent = title;
     modalBody.textContent = body;        
-    modal.className = "modalVisible";
+    modal.className = "animatedVisible";
     
     onClickOk = okCallBack ? okCallBack : () => {};        
     onCancel = cancelCallBack ? cancelCallBack : () => {};                
