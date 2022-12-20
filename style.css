@@ -96,29 +96,32 @@ canvas{
 #modalWindow{    
     position: absolute;
     width: 50%;
-    height: 20%;
+    min-height: 5em;
     margin: 0 auto;    
     background: #FFF;    
-    border-radius: 4vh;
+    border-radius: 1em;
     font-family: sans-serif;
     z-index: 99999;
-    box-shadow: 1vh 1vh 1vh rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
     text-align: center;
-    padding: 1vh;
+    padding: 1em;
 }
 
 #modalHeader{
     font-weight: bold;
-    font-size: 4vh;
-    margin-bottom: 1vh;
+    font-size: 1em;
+    margin-bottom: 1em;
 }
 
 #modalBody{
-    font-size: 3vh;
-    margin-bottom: 1vh;
+    font-size: 1em;
+    margin-bottom: 1em;
 }
 
 #modal button{
+    border: none;
+    border-radius: 1em;
+    padding: 0.5em;
     background-color: #BDAEC6;
 }
 
