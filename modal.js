@@ -8,12 +8,12 @@ function Modal(title, body, okCallBack, cancelCallBack){
     var onCancel = () => {};
 
     modalOkButton.addEventListener('click', () => {
-        onClickOk();
+        onClickOk(this);
         this.hide(); 
     });
 
     modalCancelButton.addEventListener('click', () => {
-        onCancel()
+        onCancel(this)
         this.hide();
     });        
 

@@ -33,10 +33,39 @@ function MahjongSolver(mahjongBoard){
             return false;
         }
 
-        // if(recursionLevel > 0){
-        //      // explore all the openings and then just the next three best moves
-        //      movesLeft = movesLeft.slice(0,3);
-        // }
+        // rejects boards with pieces of the same type stacked one another        
+        for(var x=0; x<MAX_X; x+=2){
+            for(var y=0; y<MAX_Y; y+=2){
+                for(var z=1; z<MAX_Z; z++){
+                    var t1 = mahjongBoard.getTileAt(x, y, z);
+                    var t2 = mahjongBoard.getTileAt(x, y, z-1);
+                    if(t1 && t1 && t1.tileType == t2.tileType){
+                        console.debug("Bad tiles stack");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // rejects boards with three pieces of the same type sequenced in a row
+        for(var z=1; z<MAX_Z; z++){
+            for(var y=0; y<MAX_Y; y+=2){
+                for(var x=0; x<MAX_X-5; x+=2){   
+                    var t1 = mahjongBoard.getTileAt(x, y, z);
+                    var t2 = mahjongBoard.getTileAt(x+2, y, z);                        
+                    var t3 = mahjongBoard.getTileAt(x+4, y, z);
+                    if(t1 && t2 && t3 && t1.tileType == t2.tileType && t1.tileType == t3.tileType){
+                        console.debug("Bad tiles sequence");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        if(recursionLevel > 0){
+             // explore all the openings and then just the next three best moves
+             movesLeft = movesLeft.slice(0,3);
+        }
 
         var i=0;
         var newBoard = mahjongBoard.cloneIt();
@@ -114,10 +143,14 @@ function MahjongSolver(mahjongBoard){
         var movesLeft = listMovesLeft(mahjongBoard);
         var board = mahjongBoard.getBoard();
         
+        // pre calcuate the profit of each next movement
+        var movesProfit = {}
+        movesLeft.forEach((move)=> movesProfit[move] = getMoveProfit(move, mahjongBoard));
+
         // sort desceding by move relevance
         movesLeft.sort((m1, m2) => {
-            var m1Profit = getMoveProfit(m1, mahjongBoard);
-            var m2Profit = getMoveProfit(m2, mahjongBoard);            
+            var m1Profit = movesProfit[m1];
+            var m2Profit = movesProfit[m2];            
             if(m1Profit != m2Profit){
                 // prioritize more adjacent future free tiles
                 return m2Profit - m1Profit;
@@ -177,7 +210,7 @@ function MahjongSolver(mahjongBoard){
 
     function getMoveProfit(move, mahjongBoard){
                 
-        var newBoard = mahjongBoard.cloneIt();        
+        var newBoard = mahjongBoard.cloneIt();           
         newBoard.removeTilesIfMatch(move[0], move[1]);
         return newBoard.getFreeTilesList().length;
 

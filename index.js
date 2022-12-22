@@ -80,13 +80,13 @@ window.onload = () => {
         do{        
             board = distributeTilesClassicBoard();
             solvable = new MahjongSolver(board).isBoardSolvable();        
-        }while(false || solvable != true);
+        }while(solvable != true);
 
         // var board = distributeTilesClassicBoard();
         gameState.board = board;
         gameState.tiles = board.getTilesList().sort(compareTilesByRenderOrder);
         gameState.solver = new MahjongSolver(board);
-        calculateMovesLeft();                
+        calculateMovesLeft();
     }
 
     // Sorts the tiles in rendereing order (bottom-top, left-right)
@@ -341,9 +341,10 @@ window.onload = () => {
 
     document.getElementById("btnNewGame").addEventListener("click", ()=>{    
         new Modal("New Game","Restart the game and shuffe the tiles?",
-            () => {
+            (modal) => {                
+                modal.hide();
                 Object.assign(gameState, initGameWithClassicDisposition());        
-                calculateMovesLeft();
+                calculateMovesLeft();                                                                  
             });
     });
     
