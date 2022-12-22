@@ -7,9 +7,10 @@
  */
 
 var SOUND_FX = {
-    "vanish" : { src: "audio/vanish.wav", volume: 1.0 },
+    "vanish" : { src: "audio/vanish.wav", volume: 0.5 },
     "click" : { src: "audio/click.wav", volume: 0.5 },
-    "horn" : { src: "audio/horn.wav", volume: 1.0 },
+    "horn" : { src: "audio/horn.wav", volume: 0.5 },
+    "ah" : { src: "audio/ah.wav", volume: 0.5 },
 }
 
 // Load audio files

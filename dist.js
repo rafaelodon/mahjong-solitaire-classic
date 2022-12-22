@@ -1,4 +1,4 @@
-var DIST = {
+DIST = {
     "board": [
         [
             [
@@ -4751,4 +4751,4 @@ var DIST = {
             "alpha": 1
         }
     }
-}
+};

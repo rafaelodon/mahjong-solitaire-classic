@@ -69,3 +69,26 @@ Object.keys(TILES_TYPES).forEach((key) => {
     };
     tileType.image.src = "img/tiles/"+key+".svg";
 });
+
+function generateTilesMap() {
+    
+    // Generates a symbol sequence based on the listed tiles and theirs counts
+    var tiles = {};
+    Object.keys(TILES_TYPES).forEach((key) => {        
+        for(var j=0; j<TILES_TYPES[key].count; j++){
+            var id = key+"_"+j; 
+            // the tile initial state
+            tiles[id] = {
+                id: id,
+                tileType: TILES_TYPES[key],
+                x: undefined,
+                y: undefined,
+                z: undefined,
+                removed: false,
+                alpha: 1,                
+            };
+        }
+    });
+
+    return tiles;
+}
