@@ -28,15 +28,15 @@ function MahjongSolver(mahjongBoard){
 
         var movesLeft = listBestMovesLeft(mahjongBoard);        
         
-        if(recursionLevel == 0 && movesLeft.length < 15){
+        if(recursionLevel == 0 && movesLeft.length < 10){
             // rejects boards with less than 10 openings
             return false;
         }
 
-        if(recursionLevel > 0){
-            // explore all the openings and then just the next three best moves
-            movesLeft = movesLeft.slice(0,10);
-        }
+        // if(recursionLevel > 0){
+        //      // explore all the openings and then just the next three best moves
+        //      movesLeft = movesLeft.slice(0,3);
+        // }
 
         var i=0;
         var newBoard = mahjongBoard.cloneIt();
@@ -49,8 +49,7 @@ function MahjongSolver(mahjongBoard){
                     return true;
                 }else{                                 
                     newBoard.undoLastMove();
-                    state.undos+=1;
-                    //console.log(state); 
+                    state.undos+=1;                    
                     return false;                   
                 }
             }
@@ -139,14 +138,14 @@ function MahjongSolver(mahjongBoard){
                         // then prioritize larger rows
                         return m2RowLength - m1RowLength;
                     }else{
-                        var m1GroupCount = mahjongBoard.getTilesList().filter((t)=>t.removed != true && t.tileType.group == m1[0].tileType.group);
-                        var m2GroupCount = mahjongBoard.getTilesList().filter((t)=>t.removed != true && t.tileType.group == m2[0].tileType.group);
+                        var m1GroupCount = mahjongBoard.getTilesList().filter((t)=>t.removed != true && t.group == m1[0].group);
+                        var m2GroupCount = mahjongBoard.getTilesList().filter((t)=>t.removed != true && t.group == m2[0].group);
                         if(m1GroupCount != m2GroupCount){                    
                             // then prioritize smaller groups                   
                             return m1GroupCount - m2GroupCount;
                         }else{                          
                             // then use tile name sorting, just to keep it idempotent
-                            return m1[0].tileType.group.localeCompare(m2[0].tileType.group);
+                            return m1[0].group.localeCompare(m2[0].group);
                         }
                     }
                 }
@@ -165,7 +164,7 @@ function MahjongSolver(mahjongBoard){
         var moves = {};
         freeTiles.forEach((current) => {
             var matches = freeTiles.filter((other) => current != other 
-                && other.tileType.group == current.tileType.group);
+                && other.group == current.group);
             matches.forEach((match) => {
                 if(!((current.id+"-"+match.id) in moves) &&
                    !((match.id+"-"+current.id) in moves)){
@@ -177,20 +176,21 @@ function MahjongSolver(mahjongBoard){
     }
 
     function getMoveProfit(move, mahjongBoard){
+                
+        var newBoard = mahjongBoard.cloneIt();        
+        newBoard.removeTilesIfMatch(move[0], move[1]);
+        return newBoard.getFreeTilesList().length;
+
         var t1Adjacents = getAdjacentTiles(move[0], mahjongBoard);
         var t2Adjacents = getAdjacentTiles(move[1], mahjongBoard);    
         var adjacents = t1Adjacents.concat(t2Adjacents);
-        
+                
         // remove duplicates
         adjacents = adjacents.filter((a, i) => adjacents.indexOf(a) === i);
 
         // remove already free tiles
         adjacents = adjacents.filter((a) => !mahjongBoard.isTileFree(mahjongBoard.getTileById(a)));
-
-        // keep future free tiles
-        var newBoard = mahjongBoard.cloneIt();        
-        newBoard.removeTilesIfMatch(move[0], move[1]);
-        adjacents = adjacents.filter((t) => newBoard.isTileFree(newBoard.getTileById(t.id)));                
+               
         return adjacents.length;
     }
 

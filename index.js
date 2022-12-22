@@ -314,7 +314,7 @@ window.onload = () => {
                 ctx.stroke();
                 
                 // tile image
-                ctx.drawImage(tile.tileType.image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);                                    
+                ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);                                    
             }
         });
     }

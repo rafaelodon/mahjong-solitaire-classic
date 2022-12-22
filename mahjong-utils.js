@@ -33,8 +33,13 @@ var MahjongUtils = {
     },
 
     // deep clone an object (arry/map/etc)
-    deepClone : (array) => {
-        return JSON.parse(JSON.stringify(array));
+    deepClone : (obj) => {
+        if(Array.isArray(obj)){
+            return obj.map(item => Array.isArray(item) ? MahjongUtils.deepClone(item) : item);
+        }else{
+            return Object.keys(obj).reduce((v, d) => Object.assign(v, {
+                [d]: (obj[d].constructor === Object) ? MahjongUtils.deepClone(obj[d]) : obj[d]
+            }), {});              
+        }        
     }
-
 }

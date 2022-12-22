@@ -80,7 +80,8 @@ function generateTilesMap() {
             // the tile initial state
             tiles[id] = {
                 id: id,
-                tileType: TILES_TYPES[key],
+                tileType: key,
+                group: TILES_TYPES[key].group,
                 x: undefined,
                 y: undefined,
                 z: undefined,

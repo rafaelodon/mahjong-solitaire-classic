@@ -37,7 +37,7 @@
     this.removeTilesIfMatch = function(tile1, tile2, successCallback, failCallBack) {
         if (tile1 && tile2 &&
             tile1.id != tile2.id &&
-            tile1.tileType.group == tile2.tileType.group) {
+            tile1.group == tile2.group) {
 
             // get a fresh tile refrence from the current tiles map to avoid
             // working with a wrong tile state (important for solver)
@@ -46,7 +46,7 @@
 
             this.removeFromBoard(thisTile1);
             this.removeFromBoard(thisTile2);
-            
+
             thisTile1.removed = true;
             thisTile2.removed = true;
 
