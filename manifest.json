@@ -5,7 +5,7 @@
     "background_color": "#A0CAB5",
     "display": "fullscreen",
     "orientation": "landscape",
-    "start_url": "/mahjong-solitarie-classic",
+    "start_url": "/mahjong-solitaire-classic",
     "icons": [
       {
         "src": "img/icon-96x96.png",
