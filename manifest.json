@@ -1,4 +1,10 @@
 {
+  "version": "1.0.0",
+  "author": "Rafael Odon de Alencar",
+  "developer": {
+    "name": "Rafael Odon de Alencar",
+    "url": "https://rafaelodon.com"
+  },
   "name": "Mahjong Solitaire Classic",
   "short_name": "Mahjong Classic",
   "theme_color": "#A0CAB5",

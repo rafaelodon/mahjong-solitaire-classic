@@ -14,6 +14,14 @@ var MAX_X = 30; // twice the number of cols
 var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
 var gameState = {}
 
+// version info from manifest
+var version = "---"
+fetch('../manifest.json').then((response) => {    
+    response.json().then((manifest) => {
+        document.getElementById("version").innerText = "v"+manifest.version;
+    });
+})
+
 window.onload = () => {
 
     gameState = {};
@@ -260,7 +268,7 @@ window.onload = () => {
 
         // moves left / congrats / gameover
         document.getElementById("moves").innerText = gameState.topBarMessage;
-
+        
         // tiles
         var tileWidth = gameState.tileWidth;
         var tileHeight = gameState.tileHeight;
