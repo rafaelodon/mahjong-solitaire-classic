@@ -3,7 +3,7 @@
     "short_name": "Mahjong",
     "theme_color": "#A0CAB5",
     "background_color": "#A0CAB5",
-    "display": "standalone",
+    "display": "fullscreen",
     "orientation": "landscape",
     "start_url": "/mahjong-solitarie-classic",
     "icons": [
