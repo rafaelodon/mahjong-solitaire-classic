@@ -4,19 +4,22 @@
         <meta charset=utf-8>
         <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1"/>
         <link rel="manifest" href="manifest.json?v=1.0.0">    
-        <title>Mahjong Solitarie Classic by Rafael Odon</title>
+        <title>Mahjong Solitaire Classic by Rafael Odon</title>
         <link rel="stylesheet" href="style.css">                    
         </style>
     </head>
 
-    <body>                
-        <div id="loader" class="lds-dual-ring"></div>
+    <body>
+        <div id="loader">
+            <div class="lds-dual-ring"></div>
+        </div>
         <div id="container" class="animatedHidden">                                  
             <div id="topbar">                   
                 <div id="moves"></div>
                 <div id="time"></div>                                
                 <div class="buttons">                    
-                    <button id="btnHint">☚ Hint</button>
+                    <button id="btnSound">Sound Off</button>
+                    <button id="btnHint">☜ Hint</button>
                     <button id="btnUndo">↻ Undo</button>
                     <button id="btnNewGame">★ New</button>                    
                 </div>                
@@ -39,6 +42,7 @@
     <script src="modal.js"></script>
     <script src="audio.js"></script>
     <script src="loop.js"></script>
+    <script src="timer.js"></script>
     <script src="mahjong-utils.js"></script>    
     <script src="mahjong-tiles.js"></script>    
     <script src="mahjong-core.js"></script>

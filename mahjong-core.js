@@ -1,4 +1,8 @@
 /** 
+ * Mahjong Solitaire Classic
+ *
+ * @author Rafael Odon <odon.rafael@gmail.com>
+ * 
  * A board of stacked tiles: 
  * - There are 2 main structures: a list of tiles and a board.
  * - The board is a 3d matrix where tiles are placed and stacked.

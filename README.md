@@ -1,6 +1,6 @@
-# Mahjong Solitarie Classic
+# Mahjong Solitaire Classic
 
-My own implementation of Mahjong Solitarie Classic in vanilla JavaScript.
+My own implementation of Mahjong Solitaire Classic in vanilla JavaScript.
 
 ALERT: you'll problably find very bad under-construction code here!
 

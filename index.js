@@ -1,5 +1,5 @@
 /* 
- * Mahjong Solitarie Classic
+ * Mahjong Solitaire Classic
  *
  * By Rafael Odon (2022)
  * odon.rafael@gmail.com
@@ -16,18 +16,24 @@ var gameState = {}
 
 window.onload = () => {
 
-    gameState = {            
-        board: undefined,        
-        tiles: [],
-        solver: undefined,
-        movesStack: [],
-        movesAvailable: 0,
-        cursor: undefined,
-        cursorTile: undefined,
-        selectedTile: undefined,
-        hint: [],
-        starTime: undefined,
-        ellapsedSeconds: 0,
+    gameState = {};
+    modal = new Modal();
+    timer = new Timer();
+
+    function clearGameState(){
+        Object.assign(gameState, {            
+            board: undefined,        
+            tiles: [],
+            solver: undefined,
+            movesStack: [],
+            movesAvailable: 0,
+            cursor: undefined,
+            cursorTile: undefined,
+            selectedTile: undefined,
+            topBarMessage: "",
+            hint: [],            
+            soundOn: true            
+        });
     }
 
     function distributeTilesClassicBoard() {
@@ -73,20 +79,27 @@ window.onload = () => {
         return new MahjongBoard(tilesMap, board);
     }
 
-    function initGameWithClassicDisposition() {    
-            
-        // generate a solvable board of stacked tiles
-        var board = [];
-        do{        
-            board = distributeTilesClassicBoard();
-            solvable = new MahjongSolver(board).isBoardSolvable();        
-        }while(solvable != true);
+    function initGameWithClassicDisposition() {              
+        
+        console.log("INIT");
 
-        // var board = distributeTilesClassicBoard();
-        gameState.board = board;
-        gameState.tiles = board.getTilesList().sort(compareTilesByRenderOrder);
-        gameState.solver = new MahjongSolver(board);
+        clearGameState();
+        
+        // generate a solvable board of stacked tiles
+        var newBoard = [];
+        do{        
+            console.log("Trying to generate a solvable board...")
+            newBoard = distributeTilesClassicBoard();
+            solvable = new MahjongSolver(newBoard).isBoardSolvable();        
+        }while(solvable != true);
+        
+        
+        gameState.board = newBoard;
+        gameState.tiles = newBoard.getTilesList().sort(compareTilesByRenderOrder);
+        gameState.solver = new MahjongSolver(newBoard);        
         calculateMovesLeft();
+        timer.stop();
+        
     }
 
     // Sorts the tiles in rendereing order (bottom-top, left-right)
@@ -134,6 +147,12 @@ window.onload = () => {
             }
         }
     }
+    
+    function playSoundFx(key){
+        if(gameState.soundOn){
+            SOUND_FX[key].play(); 
+        }
+    }
 
     // try to select the current cursor tile.
     // if there's another tile selected, try a game move;
@@ -142,22 +161,22 @@ window.onload = () => {
         if(gameState.movesAvailable > 0 && gameState.cursorTile){
 
             // starts timing
-            if(typeof gameState.starTime === "undefined"){
-                gameState.starTime = Date.now();
-            }        
+            if(!timer.isRunning()){
+                timer.reset();                
+            }   
 
             gameState.board.removeTilesIfMatch(
                 gameState.selectedTile,
                 gameState.cursorTile,
                 () => {
                     // success
-                    SOUND_FX["vanish"].play();
+                    playSoundFx("vanish");
                     clearSelected();
                     calculateMovesLeft();
                 },
                 () => {
                     // if no removal happend, selects the cursor tile
-                    SOUND_FX["click"].play();
+                    playSoundFx("click");
                     clearSelected();
                     gameState.selectedTile = gameState.cursorTile;                 
                 }
@@ -203,13 +222,21 @@ window.onload = () => {
         gameState.movesAvailable = gameState.solver.countMovestLeft();        
     }
 
-    function update() {
+    function update() {        
 
         updateCursorTile();
 
-        // ellapsed seconds
-        if(gameState.movesAvailable > 0 && gameState.starTime){
-            gameState.ellapsedSeconds = Math.round((Date.now() - gameState.starTime) / 1000);
+        // top bar message
+        if(gameState.movesAvailable != undefined){                                        
+            if(gameState.movesAvailable > 0){
+                gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;
+            }else if(gameState.board.hasFinished()){
+                gameState.topBarMessage = "🏆 Congratulations!";            
+                timer.pause();
+            }else {
+                gameState.topBarMessage = "💀 Game Over...";
+                timer.pause();
+            }
         }
         
         // tile removal animation
@@ -218,33 +245,21 @@ window.onload = () => {
             if (tile.alpha < 0.01) {
                 tile.alpha = 0;
             }        
-        });
+        });        
     }
 
     function draw() {    
 
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        if(canvas.height > canvas.width){
-            //ctx.rotate(90 * Math.PI / 180);
-        }
         ctx.globalAlpha = 1.0;
         ctx.clearRect(0, 0, canvas.width, canvas.height);            
 
-        // ellapsed time
-        if(gameState.ellapsedSeconds != undefined){
-            document.getElementById("time").innerText = "🕑 "+gameState.ellapsedSeconds+ " s";
-        }
+        // ellapsed time        
+        var secs = Math.round(timer.getEllapsedMillliseconds()/1000);
+        document.getElementById("time").innerText = "🕑 "+secs+" s";        
 
-        // moves left            
-        if(gameState.movesAvailable != undefined){                                        
-            if(gameState.movesAvailable > 0){
-                document.getElementById("moves").innerText = "Free tiles: "+gameState.movesAvailable;
-            }else if(gameState.board.hasFinished()){
-                document.getElementById("moves").innerText = "🏆 Congratulations!";            
-            }else {
-                document.getElementById("moves").innerText = "💀 Game Over...";
-            }
-        }
+        // moves left / congrats / gameover
+        document.getElementById("moves").innerText = gameState.topBarMessage;
 
         // tiles
         var tileWidth = gameState.tileWidth;
@@ -305,7 +320,7 @@ window.onload = () => {
                     ctx.fillStyle = "#7ABA7A";
                 } else if (tile == gameState.cursorTile) {
                     ctx.fillStyle = "#BDAEC6";
-                } else if (gameState.hint.includes(tile)) {
+                } else if (gameState.hint && gameState.hint.includes(tile)) {
                     ctx.fillStyle = "#FFCF79";
                 }else {
                     ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
@@ -328,39 +343,66 @@ window.onload = () => {
     setTimeout(() => window.scrollTo(0, 1), 50);
 
     // canvas
-    canvas = document.getElementById("canvas");
+    var canvas = document.getElementById("canvas");
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseout", onMouseOut);
     canvas.addEventListener("touchend", onMouseOut);
     window.addEventListener("resize", onResize);
-    calculateDimensions();
+    calculateDimensions();    
 
     // 2d context
-    ctx = canvas.getContext("2d");
+    var ctx = canvas.getContext("2d");
 
-    document.getElementById("btnNewGame").addEventListener("click", ()=>{    
-        new Modal("New Game","Restart the game and shuffe the tiles?",
+    var loader = document.getElementById("loader");
+    var container = document.getElementById("container")
+
+    document.getElementById("btnNewGame").addEventListener("click", () => {    
+        modal.show("New Game","Restart the game and shuffe the tiles?",
             (modal) => {                
-                modal.hide();
-                Object.assign(gameState, initGameWithClassicDisposition());        
-                calculateMovesLeft();                                                                  
+                modal.hide(); 
+                loader.className = "animatedVisible";
+                container.className = "animatedHidden";
+                setTimeout(() => {
+                    initGameWithClassicDisposition();
+                    loader.className = "animatedHidden";
+                    container.className = "animatedVisible";
+                });
             });
     });
     
-    document.getElementById("btnUndo").addEventListener("click", ()=>{    
+    document.getElementById("btnUndo").addEventListener("click", () => {    
         if(gameState.board.undoLastMove()){        
-            SOUND_FX["horn"].play();    
+            timer.startOrResume();
+            playSoundFx("horn");    
             clearSelected();
             calculateMovesLeft();
         }
     });
     
-    document.getElementById("btnHint").addEventListener("click", ()=>{                    
+    document.getElementById("btnHint").addEventListener("click", () => {                    
         gameState.hint = gameState.solver.getBestNextMove();        
         if(gameState.hint){
-            SOUND_FX["ah"].play();
+            playSoundFx("ah");
         }        
+    });
+
+    document.getElementById("btnSound").addEventListener("click", () => {                    
+        gameState.soundOn = !gameState.soundOn;        
+        document.getElementById("btnSound").innerText = gameState.soundOn ? "Sound Off" : "Sound On";
+        if(gameState.soundOn){
+            playSoundFx("click");
+        }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            timer.pause();
+            console.log("Pausing...");
+        } else {
+            timer.startOrResume();
+            console.log("Resuming...");
+        }
     });
 
     function loadAndRun() {
@@ -374,8 +416,8 @@ window.onload = () => {
         }else{        
             initGameWithClassicDisposition();
             Loop.run({ draw: draw, update: update });
-            document.getElementById("loader").className = "animatedHidden";
-            document.getElementById("container").className = "animatedVisible";
+            loader.className = "animatedHidden";
+            container.className = "animatedVisible";
         }
     }
         

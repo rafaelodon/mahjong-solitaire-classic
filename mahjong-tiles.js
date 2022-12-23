@@ -1,5 +1,5 @@
 /* 
- * Mahjong Solitarie Classic
+ * Mahjong Solitaire Classic
  *
  * By Rafael Odon (2022)
  * odon.rafael@gmail.com

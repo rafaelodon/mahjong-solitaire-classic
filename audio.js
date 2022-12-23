@@ -1,5 +1,5 @@
 /* 
- * Mahjong Solitarie Classic
+ * Mahjong Solitaire Classic
  *
  * By Rafael Odon (2022)
  * odon.rafael@gmail.com
@@ -19,8 +19,10 @@ Object.keys(SOUND_FX).forEach(function (key){
     soundFx.audio = new Audio(soundFx.src);   
     soundFx.audio.volume = soundFx.volume;
     soundFx.audio.addEventListener("canplaythrough", function () {
-        console.log("Sound FX",this.src,"loaded") 
-        soundFx.loaded = true;
+        if(!soundFx.loaded){
+            console.log("Sound FX",this.src,"loaded") 
+            soundFx.loaded = true;
+        }
     })
     soundFx.play = () => {
         soundFx.audio.currentTime = 0;
