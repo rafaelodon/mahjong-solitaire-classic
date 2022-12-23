@@ -347,7 +347,8 @@ window.onload = () => {
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseout", onMouseOut);
-    canvas.addEventListener("touchend", onMouseOut);
+    canvas.addEventListener("touchstart", onMouseMove);
+    canvas.addEventListener("touchend", onMouseDown);
     window.addEventListener("resize", onResize);
     calculateDimensions();    
 

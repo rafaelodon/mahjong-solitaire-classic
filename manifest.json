@@ -1,21 +1,36 @@
 {
-    "name": "Mahjong Solitaire Classic",
-    "short_name": "Mahjong",
-    "theme_color": "#A0CAB5",
-    "background_color": "#A0CAB5",
-    "display": "fullscreen",
-    "orientation": "landscape",
-    "start_url": "/mahjong-solitarie-classic",
-    "icons": [
-      {
-        "src": "img/icon-96x96.png",
-        "sizes": "96x96",
-        "type": "image/png"
-      },
-      {
-        "src": "img/icon-512x512.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ]
-  }
+  "name": "Mahjong Solitaire Classic",
+  "short_name": "Mahjong Classic",
+  "theme_color": "#A0CAB5",
+  "background_color": "#A0CAB5",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "start_url": "/mahjong-solitaire-classic",
+  "icons": [
+    {
+      "src": "img/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "description": "Mahjong Solitaire Classic is single-player chinese puzzle where 144 tiles are shuffled and stacked in a classic disposition. To remove all the pieces and win, you'll need to find pairs of maching unblocked tiles. You've got to be smart enough to anticipate and organize your moves, or else you'll be stucked with no more free tiles that can be removed.",
+  "dir": "ltr",
+  "lang": "en",
+  "categories": [
+    "games"
+  ],
+  "screenshots": [
+    {
+      "src": "img/screenshot.png",
+      "sizes": "925x450",
+      "type": "image/png"
+    }
+  ]
+}
