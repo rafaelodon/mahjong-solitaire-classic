@@ -16,7 +16,7 @@ var gameState = {}
 
 // version info from manifest
 var version = "---"
-fetch('../manifest.json').then((response) => {    
+fetch('manifest.json').then((response) => {    
     response.json().then((manifest) => {
         document.getElementById("version").innerText = "v"+manifest.version;
     });
@@ -27,6 +27,8 @@ window.onload = () => {
     gameState = {};
     modal = new Modal();
     timer = new Timer();
+    mahjongData = new MahjongData();
+    lastGameData = {};
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -40,7 +42,8 @@ window.onload = () => {
             selectedTile: undefined,
             topBarMessage: "",
             hint: [],            
-            soundOn: true            
+            soundOn: true,   
+            isRunning: false         
         });
     }
 
@@ -103,19 +106,11 @@ window.onload = () => {
         
         
         gameState.board = newBoard;
-        gameState.tiles = newBoard.getTilesList().sort(compareTilesByRenderOrder);
-        gameState.solver = new MahjongSolver(newBoard);        
+        gameState.tiles = newBoard.getTilesList().sort(MahjongUtils.compareTilesByRenderOrder);
+        gameState.solver = new MahjongSolver(newBoard);                
         calculateMovesLeft();
-        timer.stop();
-        
-    }
-
-    // Sorts the tiles in rendereing order (bottom-top, left-right)
-    function compareTilesByRenderOrder(a,b) {    
-        var rZ = a.z - b.z;
-        var rY = b.y - a.y;
-        var rX = b.x - a.x;
-        return rZ != 0 ? rZ : rX != 0 ? rX : rY;          
+        timer.stop();      
+        gameState.isRunning = true;
     }
 
     function onMouseMove(e) {
@@ -232,114 +227,120 @@ window.onload = () => {
 
     function update() {        
 
-        updateCursorTile();
+        if(gameState && gameState.isRunning){
 
-        // top bar message
-        if(gameState.movesAvailable != undefined){                                        
-            if(gameState.movesAvailable > 0){
-                gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;
-            }else if(gameState.board.hasFinished()){
-                gameState.topBarMessage = "🏆 Congratulations!";            
-                timer.pause();
-            }else {
-                gameState.topBarMessage = "💀 Game Over...";
-                timer.pause();
+            updateCursorTile();
+
+            // top bar message
+            if(gameState.movesAvailable != undefined){                                        
+                if(gameState.movesAvailable > 0){
+                    gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;
+                }else if(gameState.board.hasFinished()){
+                    gameState.topBarMessage = "🏆 Congratulations!";            
+                    timer.pause();
+                }else {
+                    gameState.topBarMessage = "💀 Game Over...";
+                    timer.pause();
+                }
             }
+            
+            // tile removal animation
+            gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
+                tile.alpha = tile.alpha - 0.1;
+                if (tile.alpha < 0.01) {
+                    tile.alpha = 0;
+                }        
+            });        
         }
-        
-        // tile removal animation
-        gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
-            tile.alpha = tile.alpha - 0.1;
-            if (tile.alpha < 0.01) {
-                tile.alpha = 0;
-            }        
-        });        
     }
 
     function draw() {    
 
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1.0;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);            
+        if(gameState && gameState.isRunning){
 
-        // ellapsed time        
-        var secs = Math.round(timer.getEllapsedMillliseconds()/1000);
-        document.getElementById("time").innerText = "🕑 "+secs+" s";        
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1.0;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);            
 
-        // moves left / congrats / gameover
-        document.getElementById("moves").innerText = gameState.topBarMessage;
-        
-        // tiles
-        var tileWidth = gameState.tileWidth;
-        var tileHeight = gameState.tileHeight;
-        var tileThickness = gameState.tileThickness;
-        gameState.tiles.forEach((tile) => {        
-            if (tile.alpha > 0) {
-                            
-                ctx.setTransform(1, 0, 0, 1, 0, 0);            
-                ctx.globalAlpha = tile.alpha;
-                ctx.lineWidth = 0.1;
+            // ellapsed time        
+            var secs = Math.round(timer.getEllapsedMillliseconds()/1000);
+            document.getElementById("time").innerText = "🕑 "+secs+" s";        
 
-                // translate to the tile position
-                var pZ = (tile.z + 1) * tileThickness;
-                var pX = tile.x * tileWidth / 2 + pZ;
-                var pY = tile.y * tileHeight / 2 + pZ;
-                ctx.translate(pX, pY);
+            // moves left / congrats / gameover
+            document.getElementById("moves").innerText = gameState.topBarMessage;
+            
+            // tiles
+            var tileWidth = gameState.tileWidth;
+            var tileHeight = gameState.tileHeight;
+            var tileThickness = gameState.tileThickness;
+            gameState.tiles.forEach((tile) => {        
+                if (tile.alpha > 0) {
+                                
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);            
+                    ctx.globalAlpha = tile.alpha;
+                    ctx.lineWidth = 0.1;
 
-                // shadow
-                var shadowColor = "rgb(100,100,100,1)";
-                ctx.fillStyle = shadowColor;
-                ctx.shadowBlur = tileThickness * 2;
-                ctx.shadowColor = shadowColor;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-                ctx.fillRect(0, 0, tileWidth, tileHeight);
-                ctx.shadowBlur = 0;
+                    // translate to the tile position
+                    var pZ = (tile.z + 1) * tileThickness;
+                    var pX = tile.x * tileWidth / 2 + pZ;
+                    var pY = tile.y * tileHeight / 2 + pZ;
+                    ctx.translate(pX, pY);
 
-                // upper side
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(tileWidth, 0);
-                ctx.lineTo(tileWidth + tileThickness, tileThickness);
-                ctx.lineTo(tileThickness, tileThickness);
-                ctx.lineTo(0, 0);
-                var gray = 150 + (tile.z * 5);
-                ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
-                ctx.fill();
-                ctx.stroke();
+                    // shadow
+                    var shadowColor = "rgb(100,100,100,1)";
+                    ctx.fillStyle = shadowColor;
+                    ctx.shadowBlur = tileThickness * 2;
+                    ctx.shadowColor = shadowColor;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    ctx.fillRect(0, 0, tileWidth, tileHeight);
+                    ctx.shadowBlur = 0;
 
-                // left side
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(tileThickness, tileThickness);
-                ctx.lineTo(tileThickness, tileHeight + tileThickness);
-                ctx.lineTo(0, tileHeight);
-                ctx.lineTo(0, 0);
-                var gray = 100 + (tile.z * 5);
-                ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
-                ctx.fill();
-                ctx.stroke();
-
-                // top
-                ctx.beginPath();
-                ctx.rect(tileThickness, tileThickness, tileWidth, tileHeight);
-                var gray = 255 - (35 / (tile.z + 1)); // diferent shades for every stack level
-                if (tile == gameState.selectedTile) {
-                    ctx.fillStyle = "#7ABA7A";
-                } else if (tile == gameState.cursorTile) {
-                    ctx.fillStyle = "#BDAEC6";
-                } else if (gameState.hint && gameState.hint.includes(tile)) {
-                    ctx.fillStyle = "#FFCF79";
-                }else {
+                    // upper side
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(tileWidth, 0);
+                    ctx.lineTo(tileWidth + tileThickness, tileThickness);
+                    ctx.lineTo(tileThickness, tileThickness);
+                    ctx.lineTo(0, 0);
+                    var gray = 150 + (tile.z * 5);
                     ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // left side
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(tileThickness, tileThickness);
+                    ctx.lineTo(tileThickness, tileHeight + tileThickness);
+                    ctx.lineTo(0, tileHeight);
+                    ctx.lineTo(0, 0);
+                    var gray = 100 + (tile.z * 5);
+                    ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // top
+                    ctx.beginPath();
+                    ctx.rect(tileThickness, tileThickness, tileWidth, tileHeight);
+                    var gray = 255 - (35 / (tile.z + 1)); // diferent shades for every stack level
+                    if (tile == gameState.selectedTile) {
+                        ctx.fillStyle = "#7ABA7A";
+                    } else if (tile == gameState.cursorTile) {
+                        ctx.fillStyle = "#BDAEC6";
+                    } else if (gameState.hint && gameState.hint.includes(tile)) {
+                        ctx.fillStyle = "#FFCF79";
+                    }else {
+                        ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
+                    }
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // tile image
+                    ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);                                    
                 }
-                ctx.fill();
-                ctx.stroke();
-                
-                // tile image
-                ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);                                    
-            }
-        });
+            });
+        }
     }
 
     function clearSelected() {
@@ -370,13 +371,7 @@ window.onload = () => {
         modal.show("New Game","Restart the game and shuffe the tiles?",
             (modal) => {                
                 modal.hide(); 
-                loader.className = "animatedVisible";
-                container.className = "animatedHidden";
-                setTimeout(() => {
-                    initGameWithClassicDisposition();
-                    loader.className = "animatedHidden";
-                    container.className = "animatedVisible";
-                });
+                startNewGame();
             });
     });
     
@@ -408,11 +403,32 @@ window.onload = () => {
         if (document.hidden) {
             timer.pause();
             console.log("Pausing...");
+            lastGameData.gameState = gameState;
+            lastGameData.ellapsedMillliseconds = timer.getEllapsedMillliseconds();            
+            mahjongData.saveGameData(lastGameData);
         } else {
             timer.startOrResume();
             console.log("Resuming...");
         }
     });
+    
+    function startNewGame() {
+        showLoader();
+        setTimeout(() => {
+            initGameWithClassicDisposition();
+            hideLoader();
+        },50);
+    }
+
+    function showLoader() {
+        loader.className = "animatedVisible";
+        container.className = "animatedHidden";
+    }
+
+    function hideLoader() {
+        loader.className = "animatedHidden";
+        container.className = "animatedVisible";
+    }
 
     function loadAndRun() {
                
@@ -422,11 +438,26 @@ window.onload = () => {
         if(loadingTiles.length + loadingSoundFxs.length > 0){
             // keeps loading...
             setTimeout(loadAndRun, 100);        
-        }else{        
-            initGameWithClassicDisposition();
+        }else{
             Loop.run({ draw: draw, update: update });
-            loader.className = "animatedHidden";
-            container.className = "animatedVisible";
+            // check if there's a ongoing game to be resumed                               
+            lastGameData = mahjongData.loadGameData();    
+            if(lastGameData.gameState && lastGameData.gameState.board 
+                && !lastGameData.gameState.board.hasFinished()){                
+                hideLoader();
+                modal.show("Resume","Do you want to resume the last game?",
+                 () => {                                    
+                    gameState = lastGameData.gameState;
+                    gameState.isRunning = true;  
+                    calculateDimensions();
+                    timer.startOrResume(lastGameData.ellapsedMillliseconds)                                        
+                 },
+                 () => {
+                    startNewGame();                    
+                 });
+            }else{                
+                startNewGame();        
+            }            
         }
     }
         

@@ -41,5 +41,13 @@ var MahjongUtils = {
                 [d]: (obj[d].constructor === Object) ? MahjongUtils.deepClone(obj[d]) : obj[d]
             }), {});              
         }        
+    },
+
+    // Sorts the tiles in rendereing order (bottom-top, left-right)
+    compareTilesByRenderOrder : (a,b) => {    
+        var rZ = a.z - b.z;
+        var rY = b.y - a.y;
+        var rX = b.x - a.x;
+        return rZ != 0 ? rZ : rX != 0 ? rX : rY;          
     }
 }

@@ -1,8 +1,11 @@
 function Timer(){
     this.ellapsedMilliseconds = 0;
-    this.running = false;    
+    this.running = false;        
 
-    this.startOrResume = function(){        
+    this.startOrResume = function(givenEllapsedMilliseconds=undefined){        
+        if(givenEllapsedMilliseconds){
+            this.ellapsedMilliseconds = givenEllapsedMilliseconds;
+        }
         this.running = true;
     }
 

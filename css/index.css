@@ -116,19 +116,21 @@ canvas{
 
 #modalHeader{
     font-weight: bold;
-    font-size: 1em;
+    font-size: 1.5em;
     margin-bottom: 1em;
+    color: #555;
 }
 
 #modalBody{
-    font-size: 1em;
-    margin-bottom: 1em;
+    font-size: 1.25em;
+    margin-bottom: 1.5em;
 }
 
 #modal button{
     border: none;
     border-radius: 1em;
-    padding: 0.5em;
+    padding: 0.5em 1em 0.5em 1em;
+    font-size: 1.5em;
     background-color: #BDAEC6;
 }
 
