@@ -29,6 +29,9 @@ window.onload = () => {
     timer = new Timer();
     mahjongData = new MahjongData();
     lastGameData = {};
+    winAnimationTile = undefined;
+    winAnimationArray = undefined;
+    tweens = [];
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -43,7 +46,8 @@ window.onload = () => {
             topBarMessage: "",
             hint: [],            
             soundOn: true,   
-            isRunning: false         
+            isRunning: false,
+            hasWon: false
         });
     }
 
@@ -235,8 +239,9 @@ window.onload = () => {
             if(gameState.movesAvailable != undefined){                                        
                 if(gameState.movesAvailable > 0){
                     gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;
-                }else if(gameState.board.hasFinished()){
+                }else if(gameState.board.hasFinished()){                    
                     gameState.topBarMessage = "🏆 Congratulations!";            
+                    setTimeout(() => { gameState.hasWon = true },1000);
                     timer.pause();
                 }else {
                     gameState.topBarMessage = "💀 Game Over...";
@@ -245,12 +250,38 @@ window.onload = () => {
             }
             
             // tile removal animation
-            gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {            
-                tile.alpha = tile.alpha - 0.1;
-                if (tile.alpha < 0.01) {
-                    tile.alpha = 0;
-                }        
-            });        
+            if(gameState.hasWon != true){
+                gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {
+                    tile.alpha = tile.alpha - 0.1;
+                    if (tile.alpha < 0.01) {
+                        tile.alpha = 0;
+                    }        
+                });        
+            }
+
+            // game win animation
+            if(gameState.hasWon){
+                if(typeof winAnimationArray === "undefined"){                    
+                    winAnimationArray = gameState.tiles.map((t)=>t);
+                    console.log("=====",winAnimationArray.length);
+                }else if(typeof winAnimationTile === "undefined"){
+                    winAnimationTile = winAnimationArray.shift();                        
+                    if(winAnimationTile){
+                        console.log("#####",winAnimationTile.id,winAnimationArray.length);
+                        winAnimationTile.alpha = 1.0;
+                        tweens.push(new MotionTween(winAnimationTile,"y",0,winAnimationTile.y,200*(winAnimationTile.y/MAX_Y),()=>{
+                            winAnimationTile = undefined;
+                        },EASE_LOG));
+                    }
+                }
+            }
+
+            tweens.forEach((tween)=>{
+                tween.update();
+                if(tween.isRunning != true){
+                    tweens = tweens.filter((t) => t != tween);
+                }
+            });
         }
     }
 
@@ -273,13 +304,13 @@ window.onload = () => {
             var tileWidth = gameState.tileWidth;
             var tileHeight = gameState.tileHeight;
             var tileThickness = gameState.tileThickness;
-            gameState.tiles.forEach((tile) => {        
+            gameState.tiles.forEach((tile) => {                        
                 if (tile.alpha > 0) {
-                                
+
                     ctx.setTransform(1, 0, 0, 1, 0, 0);            
                     ctx.globalAlpha = tile.alpha;
                     ctx.lineWidth = 0.1;
-
+                
                     // translate to the tile position
                     var pZ = (tile.z + 1) * tileThickness;
                     var pX = tile.x * tileWidth / 2 + pZ;
@@ -377,6 +408,7 @@ window.onload = () => {
     
     document.getElementById("btnUndo").addEventListener("click", () => {    
         if(gameState.board.undoLastMove()){        
+            gameState.hasWon = false;
             timer.startOrResume();
             playSoundFx("horn");    
             clearSelected();
@@ -417,7 +449,15 @@ window.onload = () => {
         setTimeout(() => {
             initGameWithClassicDisposition();
             hideLoader();
-        },50);
+
+            //debug fast forward
+            for(var i=0; i<70; i++){
+                var nextMove = gameState.solver.getBestNextMove();
+                if(nextMove){
+                    gameState.board.removeTilesIfMatch(nextMove[0], nextMove[1]);
+                }
+            }
+        },50);        
     }
 
     function showLoader() {
@@ -462,4 +502,42 @@ window.onload = () => {
     }
         
     loadAndRun();
+}
+
+var EASE_LOG = "log"
+var EASE_EXP = "exp"
+var EASE_LINEAR = "linear"
+
+function MotionTween(obj,key,initialValue,endValue,duration,callback,type=EASE_LINEAR){     
+    
+    this.obj = obj;
+    this.key = key;
+    this.isRunning = true;
+    var startTime = Loop.lastTime;    
+    obj[key] = initialValue;
+
+    this.update = function (){        
+        if(this.isRunning){
+
+            var percent = 1.0;
+            var loopCount = (Loop.lastTime - startTime) / (duration / Loop.fps)
+            if (type == EASE_LOG) {
+                percent = Math.log10(1 + (loopCount / Loop.fps) * (9))
+            } else if (type == EASE_EXP) {
+                percent = Math.exp(loopCount * Math.E / Loop.fps - 1) / (Math.E - 1)
+            } else {                     
+                percent = loopCount / Loop.fps;
+            }
+            
+            if(percent > 0.999){
+                this.isRunning = false;
+                obj[key] = endValue;
+                if(callback){
+                    callback(this);
+                }
+            }else{
+                obj[key] = initialValue + ((endValue - initialValue) * percent);
+            }
+        }
+    }
 }
