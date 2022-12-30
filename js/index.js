@@ -39,6 +39,7 @@ window.onload = () => {
             cursor: undefined,
             cursorTile: undefined,
             selectedTile: undefined,
+            undos: 0,
             topBarMessage: "",
             hint: [],            
             soundOn: true,   
@@ -201,7 +202,8 @@ window.onload = () => {
         setTimeout(() => {
             if(gameState.hasWon == false){
                 gameState.hasWon = true;      
-                playSoundFx("victory");      
+                playSoundFx("victory");
+                updateStats();
                 mahjongData.clearGameData();
                 var count=0;
                 for(var aZ=0; aZ<MAX_Z; aZ++){                
@@ -218,12 +220,45 @@ window.onload = () => {
                             setTimeout(setupTileForWinAnimation, (count++)*100, tile2, false)
                         }                    
                     }   
-                }
-                setTimeout(()=>{
-                    
-                },count*100);
+                }                
+                setTimeout(showRanking(),count*100+1000);
             }
         },2000);
+    }
+
+    function showRanking(){
+        var stats = mahjongData.loadGameStats();
+        var ranking = document.getElementById("rankingTable"); 
+        ranking.innerHTML = "(empty)";
+        if(stats && stats.ranking && stats.ranking.length > 0){
+            stats.ranking.sort((a,b) => a.seconds - b.seconds);
+            ranking.innerHTML = "";
+            stats.ranking.forEach((stat,i)=>{
+                var tr = document.createElement("tr")
+                var date = new Date(stat.date);
+                var dateString = date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate();
+                tr.innerHTML = "<td>"+(i+1)+"</td>";
+                tr.innerHTML += "<td>"+dateString+"</td>";
+                tr.innerHTML += "<td>"+stat.seconds+" s</td>";
+                tr.innerHTML += "<td>"+stat.undos+" undos</td>";
+                ranking.appendChild(tr);
+            });            
+        }            
+        modal.show({
+            headerContent: "Your Ranking",
+            bodyContent: ranking.outerHTML,
+            cancelButtonText: false
+        }); 
+    }
+    
+    function updateStats(){        
+        var stats = mahjongData.loadGameStats();
+        stats.ranking.push({
+            date: Date.now(),
+            seconds: timer.getEllapsedMillliseconds(),
+            undos: gameState.undos
+        });
+        mahjongData.saveGameStats(stats);
     }
 
     function onGameOver() {
@@ -424,16 +459,20 @@ window.onload = () => {
     var container = document.getElementById("container")
 
     document.getElementById("btnNewGame").addEventListener("click", () => {    
-        modal.show("New Game","Restart the game and shuffe the tiles?",
-            (modal) => {                
+        modal.show({
+            headerContent: "New Game",
+            bodyContent: "Restart the game and shuffe the tiles?",
+            okCallback: (modal) => {                
                 modal.hide(); 
                 startNewGame();
-            });
+            }
+        });
     });
     
     document.getElementById("btnUndo").addEventListener("click", () => {    
         if(!gameState.hasWon && gameState.board.undoLastMove()){                    
             timer.startOrResume();
+            gameState.undos += 1;
             playSoundFx("horn");    
             clearSelected();
             calculateMovesLeft();
@@ -453,6 +492,10 @@ window.onload = () => {
         if(gameState.soundOn){
             playSoundFx("click");
         }
+    });
+
+    document.getElementById("btnRanking").addEventListener("click", () => {                                    
+        showRanking();       
     });
 
     document.addEventListener("visibilitychange", () => {
@@ -503,16 +546,19 @@ window.onload = () => {
             if(lastGameData.gameState && lastGameData.gameState.board 
                 && !lastGameData.gameState.board.hasFinished()){                
                 hideLoader();
-                modal.show("Resume","Do you want to resume the last game?",
-                 () => {                                    
-                    gameState = lastGameData.gameState;
-                    gameState.isRunning = true;  
-                    calculateDimensions();
-                    timer.startOrResume(lastGameData.ellapsedMillliseconds)                                        
-                 },
-                 () => {
-                    startNewGame();                    
-                 });
+                modal.show({
+                    headerContent: "Resume",
+                    bodyContent: "Do you want to resume the last game?",
+                    okCallback: () => {                                    
+                        gameState = lastGameData.gameState;
+                        gameState.isRunning = true;  
+                        calculateDimensions();
+                        timer.startOrResume(lastGameData.ellapsedMillliseconds)                                        
+                    },
+                    cancelCallback: () => {
+                        startNewGame();                    
+                    }
+                });
             }else{                
                 startNewGame();        
             }            

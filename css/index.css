@@ -77,68 +77,6 @@ canvas{
     background: #BDAEC6;
 }
 
-/* MODAL */
-#modal {
-    display: flex;        
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;    
-    align-items: center; 
-    justify-content: center;
-}
-
-#modalBackground{
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    opacity: 0.5; 
-    z-index: 99998;
-}
-
-#modalWindow{    
-    position: absolute;
-    width: 50%;
-    min-height: 5em;
-    margin: 0 auto;    
-    background: #FFF;    
-    border-radius: 1em;
-    font-family: sans-serif;
-    z-index: 99999;
-    box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
-    text-align: center;
-    padding: 1em;
-}
-
-#modalHeader{
-    font-weight: bold;
-    font-size: 1.5em;
-    margin-bottom: 1em;
-    color: #555;
-}
-
-#modalBody{
-    font-size: 1.25em;
-    margin-bottom: 1.5em;
-}
-
-#modal button{
-    border: none;
-    border-radius: 1em;
-    padding: 0.5em 1em 0.5em 1em;
-    font-size: 1.5em;
-    background-color: #BDAEC6;
-}
-
-#modal button:hover{
-    background-color: #999;
-    cursor: pointer;
-}
-
 /* FADE IN/OUT ANIMATION */
 .animatedVisible {    
     visibility: visible;
@@ -186,3 +124,35 @@ canvas{
     }
 }
   
+
+/* RANKING */
+#ranking{
+    display: none;
+}
+
+#rankingTable{    
+    height: 40vh;
+    width: 80vw;
+    overflow-y: auto;
+    border-spacing: 0;
+}
+
+#rankingTable td,
+#rankingTable tr{    
+    margin:0px;
+    padding:0px;
+}
+
+#rankingTable tr{
+    border-top: 1px solid #576E62;
+}
+
+#rankingTable tr:nth-child(odd){
+    background-color: #cfe3d9;
+}
+
+#rankingTable tr td:first-child{
+    font-weight: bold;
+}
+
+

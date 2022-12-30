@@ -5,6 +5,7 @@
         <title>Mahjong Solitaire Classic by Rafael Odon</title>
         <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1"/>                
         <link rel="manifest" href="manifest.json">                    
+        <link rel="stylesheet" href="css/modal.css">
         <link rel="stylesheet" href="css/index.css">                    
         <link rel="icon" type="image/x-icon" href="img/favicon.ico">        
         <script>
@@ -20,10 +21,11 @@
         </div>
         <div id="container" class="animatedHidden">                                  
             <div id="topbar">                   
-                <div id="moves"></div>                
-                <div id="time"></div>                                
+                <div id="moves"></div>
+                <div id="time"></div>
                 <div id="version"></div>
                 <div class="buttons">                    
+                    <button id="btnRanking">Ranking</button>
                     <button id="btnSound">Sound Off</button>
                     <button id="btnHint">☜ Hint</button>
                     <button id="btnUndo">↻ Undo</button>
@@ -35,14 +37,27 @@
         <div id="modal" class="animatedHidden">                        
             <div id="modalBackground"></div>
             <div id="modalWindow">                
-                <div id="modalHeader">Modal</div>                
-                <div id="modalBody">Mensagem</div>
-                <div id="modalFooter">
-                    <button id="modalOkButton">Ok</button>
-                    <button id="modalCancelButton">Cancel</button>
+                <div class="modalHeader">Modal</div>                
+                <div class="modalBody">Mensagem</div>
+                <div class="modalFooter">
+                    <button class="modalOkButton">Ok</button>
+                    <button class="modalCancelButton">Cancel</button>
                 </div>
             </div>            
-        </div>  
+        </div> 
+        <div id="ranking">            
+            <table id="rankingTable">                                                    
+                <tr><td>2</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>3</td><td>2022-01-01</td><td>350 </td><td>1 undo</td></tr>
+                <tr><td>4</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>5</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>6</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>7</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>8</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>9</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>
+                <tr><td>10</td><td>2022-01-01</td><td>350 s</td><td>1 undo</td></tr>                
+            </table>
+        </div>
     </body>
     
     <script src="js/modal.js"></script>

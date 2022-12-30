@@ -1,45 +1,76 @@
-function Modal(visibleClass="animatedVisible", hiddenClass="animatedHidden"){ 
-    var modal = document.getElementById("modal");    
-    var modalHeader = document.getElementById("modalHeader");
-    var modalBody = document.getElementById("modalBody");
-    var modalOkButton = document.getElementById("modalOkButton");
-    var modalCancelButton = document.getElementById("modalCancelButton");
-    var visibleClass = visibleClass;
-    var hiddenClass = hiddenClass;
+/**
+ * A modal window with header, body, ok and cancel buttons.
+ * 
+ */
+function Modal({
+    modalId="modal",
+    modalHeaderClass="modalHeader",
+    modalBodyClass="modalBody",
+    modalOkButtonClass="modalOkButton",
+    modalCancelButtonClass="modalCancelButton",
+    visibleClass="animatedVisible",
+    hiddenClass="animatedHidden",    
+}={}){ 
+    this.modal = document.getElementById(modalId);    
+    this.modalHeader = modal.getElementsByClassName(modalHeaderClass)[0];
+    this.modalBody = modal.getElementsByClassName(modalBodyClass)[0];
+    this.modalOkButton = modal.getElementsByClassName(modalOkButtonClass)[0];
+    this.modalCancelButton = modal.getElementsByClassName(modalCancelButtonClass)[0];
+    this.visibleClass = visibleClass;
+    this.hiddenClass = hiddenClass;
 
-    var _okCallback = undefined;
-    var _cancelCallback = undefined;   
+    this.innerOkCallback = undefined;
+    this.innerCancelCallback = undefined;       
 
-    modalOkButton.addEventListener('click', () => {
-        if(_okCallback){
-            _okCallback(this);
+    this.modalOkButton.addEventListener('click', () => {
+        if(this.innerOkCallback){
+            this.innerOkCallback(this);
         }
         this.hide();
     });    
 
-    modalCancelButton.addEventListener('click', () => {
-        if(_cancelCallback){
-            _cancelCallback(this);
+    this.modalCancelButton.addEventListener('click', () => {
+        if(this.innerCancelCallback){
+            this.innerCancelCallback(this);
         }
         this.hide();
-    });        
-
+    }); 
+}       
     
-    this.show = function(title,body,okCallback=undefined,cancelCallback=undefined,okButtonText="Ok",cancelButtonText="Cancel"){
-        _okCallback = okCallback;
-        _cancelCallback = cancelCallback;
+Modal.prototype.show = function({
+        headerContent="",
+        bodyContent="",        
+        okButtonText="Ok",
+        cancelButtonText="Cancel",
+        okCallback=undefined,
+        cancelCallback=undefined
+    }={}){
+    this.innerOkCallback = okCallback;
+    this.innerCancelCallback = cancelCallback;
 
-        modalHeader.textContent = title;
-        modalBody.textContent = body;        
-        modal.className = visibleClass;    
-    }    
+    // hides Ok Button if its text is undefined
+    if(okButtonText){
+        this.modalOkButton.style.display = "visible"; 
+    }else{
+        this.modalOkButton.style.display = "none"; 
+    }
 
-    this.hide = function(callBack=undefined){
-        if(callBack){
-            callBack();
-        }
-        modal.className = hiddenClass;
-    }    
+    // hides Cancel Button if its text is undefined
+    if(cancelButtonText){
+        this.modalCancelButton.style.display = "visible"; 
+    }else{        
+        this.modalCancelButton.style.display = "none"; 
+    }        
 
-                    
+
+    this.modalHeader.innerHTML = headerContent;
+    this.modalBody.innerHTML = bodyContent;        
+    this.modal.className = this.visibleClass;    
+}    
+
+Modal.prototype.hide = function(callBack=undefined){
+    if(callBack){
+        callBack();
+    }
+    this.modal.className = this.hiddenClass;
 }
