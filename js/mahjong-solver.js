@@ -4,7 +4,7 @@
  * @author Rafael Odon <odon.rafael@gmail.com>
  * @param {MahjongBoard} mahjongBoard    
  */
-function MahjongSolver(mahjongBoard){    
+function MahjongSolver(mahjongBoard){     
 
     /**     
      * @returns {Boolean}

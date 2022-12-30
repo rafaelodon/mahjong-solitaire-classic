@@ -29,8 +29,6 @@ window.onload = () => {
     timer = new Timer();
     mahjongData = new MahjongData();
     lastGameData = {};
-    winAnimationTiles = [];    
-    tweens = [];
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -218,7 +216,9 @@ window.onload = () => {
                         }                    
                     }   
                 }
-                console.log("FIM!");
+                setTimeout(()=>{
+                    
+                },count*100);
             }
         },2000);
     }
@@ -467,15 +467,7 @@ window.onload = () => {
         showLoader();
         setTimeout(() => {
             initGameWithClassicDisposition();
-            hideLoader();
-
-            //debug fast forward
-            for(var i=0; i<70; i++){
-                var nextMove = gameState.solver.getBestNextMove();
-                if(nextMove){
-                    gameState.board.removeTilesIfMatch(nextMove[0], nextMove[1]);
-                }
-            }
+            hideLoader();            
         },50);        
     }
 
