@@ -3,9 +3,7 @@ function MahjongData() {
     var STORAGE_DATA = "mahjong.data";
     var STORAGE_STATS = "mahjong.stats";    
     var INITIAL_DATA = {
-        "board": {},
-        "tiles": {},
-        "ellapsedMilliseconds": 0,
+        "gameState": {},
         "version": MAHJONG_DATA_VERSION,
         "timestamp": new Date().getTime()
     }
@@ -14,16 +12,20 @@ function MahjongData() {
         "version": MAHJONG_DATA_VERSION
     }
 
+    this.clearGameData = function(){
+        this.saveGameData(INITIAL_DATA);
+    }
+
     this.loadGameData = function (){
-        let data = window.localStorage.getItem(STORAGE_DATA);
-        let obj = undefined;
+        var data = window.localStorage.getItem(STORAGE_DATA);
+        var obj = Object.assign({},INITIAL_DATA);            
         if (data) {
             obj = JSON.parse(data);
-            obj.gameState.board = Object.assign(new MahjongBoard({},[]), obj.gameState.board);
-            obj.gameState.tiles = obj.gameState.board.getTilesList().sort(MahjongUtils.compareTilesByRenderOrder);
-            obj.gameState.solver = Object.assign(new MahjongSolver(obj.gameState.board));
-        } else {
-            obj = Object.assign({},INITIAL_DATA);            
+            if(obj.gameState && obj.gameState.board){            
+                obj.gameState.board = Object.assign(new MahjongBoard({},[]), obj.gameState.board);
+                obj.gameState.tiles = obj.gameState.board.getTilesList().sort(MahjongUtils.compareTilesByRenderOrder);
+                obj.gameState.solver = Object.assign(new MahjongSolver(obj.gameState.board));
+            }
         }
         return obj;
     }

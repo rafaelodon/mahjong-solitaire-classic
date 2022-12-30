@@ -29,8 +29,7 @@ window.onload = () => {
     timer = new Timer();
     mahjongData = new MahjongData();
     lastGameData = {};
-    winAnimationTile = undefined;
-    winAnimationArray = undefined;
+    winAnimationTiles = [];    
     tweens = [];
 
     function clearGameState(){
@@ -180,6 +179,9 @@ window.onload = () => {
                     playSoundFx("vanish");
                     clearSelected();
                     calculateMovesLeft();
+                    if(gameState.board.hasFinished){
+                        onWinGame();
+                    }
                 },
                 () => {
                     // if no removal happend, selects the cursor tile
@@ -192,6 +194,33 @@ window.onload = () => {
             // outside clicks unselect things
             clearSelected();
         }              
+    }
+
+    function onWinGame(){        
+        setTimeout(() => {
+            if(gameState.hasWon == false){
+                gameState.hasWon = true;      
+                playSoundFx("victory");      
+                mahjongData.clearGameData();
+                var count=0;
+                for(var aZ=0; aZ<MAX_Z; aZ++){                
+                    winAnimationArray = gameState.tiles.filter((t)=>t.z==aZ);                                                                                
+                    var tile1,tile2=undefined;
+                    while(winAnimationArray.length > 0){                        
+                        tile1 = winAnimationArray.shift();                       
+                        if(tile1){
+                            setTimeout(setupTileForWinAnimation, (count++)*100, tile1)                        
+                        }
+
+                        tile2 = winAnimationArray.pop();                    
+                        if(tile2){
+                            setTimeout(setupTileForWinAnimation, (count++)*100, tile2, false)
+                        }                    
+                    }   
+                }
+                console.log("FIM!");
+            }
+        },2000);
     }
 
     function onResize() {
@@ -240,8 +269,7 @@ window.onload = () => {
                 if(gameState.movesAvailable > 0){
                     gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;
                 }else if(gameState.board.hasFinished()){                    
-                    gameState.topBarMessage = "🏆 Congratulations!";            
-                    setTimeout(() => { gameState.hasWon = true },1000);
+                    gameState.topBarMessage = "🏆 Congratulations!";
                     timer.pause();
                 }else {
                     gameState.topBarMessage = "💀 Game Over...";
@@ -259,30 +287,20 @@ window.onload = () => {
                 });        
             }
 
-            // game win animation
-            if(gameState.hasWon){
-                if(typeof winAnimationArray === "undefined"){                    
-                    winAnimationArray = gameState.tiles.map((t)=>t);
-                    console.log("=====",winAnimationArray.length);
-                }else if(typeof winAnimationTile === "undefined"){
-                    winAnimationTile = winAnimationArray.shift();                        
-                    if(winAnimationTile){
-                        console.log("#####",winAnimationTile.id,winAnimationArray.length);
-                        winAnimationTile.alpha = 1.0;
-                        tweens.push(new MotionTween(winAnimationTile,"y",0,winAnimationTile.y,200*(winAnimationTile.y/MAX_Y),()=>{
-                            winAnimationTile = undefined;
-                        },EASE_LOG));
-                    }
-                }
-            }
-
-            tweens.forEach((tween)=>{
-                tween.update();
-                if(tween.isRunning != true){
-                    tweens = tweens.filter((t) => t != tween);
-                }
-            });
+            TweenManager.update();
         }
+    }
+
+    function setupTileForWinAnimation(tile,down=true){
+        tile.alpha = 1.0;
+        TweenManager.addTween(new Tween({
+            obj:tile,
+            key:"y",
+            initialValue: down ? 0 : MAX_Y+1,
+            endValue: tile.y,
+            durationMs: 1000*(down ? 1-(tile.y/MAX_Y) : tile.y/MAX_Y),
+            type: TweenType.EASE_LOG            
+        }).start());   
     }
 
     function draw() {    
@@ -407,8 +425,7 @@ window.onload = () => {
     });
     
     document.getElementById("btnUndo").addEventListener("click", () => {    
-        if(gameState.board.undoLastMove()){        
-            gameState.hasWon = false;
+        if(!gameState.hasWon && gameState.board.undoLastMove()){                    
             timer.startOrResume();
             playSoundFx("horn");    
             clearSelected();
@@ -435,9 +452,11 @@ window.onload = () => {
         if (document.hidden) {
             timer.pause();
             console.log("Pausing...");
-            lastGameData.gameState = gameState;
-            lastGameData.ellapsedMillliseconds = timer.getEllapsedMillliseconds();            
-            mahjongData.saveGameData(lastGameData);
+            if(!gameState.hasWon){
+                lastGameData.gameState = gameState;
+                lastGameData.ellapsedMillliseconds = timer.getEllapsedMillliseconds();                        
+                mahjongData.saveGameData(lastGameData);
+            }
         } else {
             timer.startOrResume();
             console.log("Resuming...");
@@ -504,40 +523,3 @@ window.onload = () => {
     loadAndRun();
 }
 
-var EASE_LOG = "log"
-var EASE_EXP = "exp"
-var EASE_LINEAR = "linear"
-
-function MotionTween(obj,key,initialValue,endValue,duration,callback,type=EASE_LINEAR){     
-    
-    this.obj = obj;
-    this.key = key;
-    this.isRunning = true;
-    var startTime = Loop.lastTime;    
-    obj[key] = initialValue;
-
-    this.update = function (){        
-        if(this.isRunning){
-
-            var percent = 1.0;
-            var loopCount = (Loop.lastTime - startTime) / (duration / Loop.fps)
-            if (type == EASE_LOG) {
-                percent = Math.log10(1 + (loopCount / Loop.fps) * (9))
-            } else if (type == EASE_EXP) {
-                percent = Math.exp(loopCount * Math.E / Loop.fps - 1) / (Math.E - 1)
-            } else {                     
-                percent = loopCount / Loop.fps;
-            }
-            
-            if(percent > 0.999){
-                this.isRunning = false;
-                obj[key] = endValue;
-                if(callback){
-                    callback(this);
-                }
-            }else{
-                obj[key] = initialValue + ((endValue - initialValue) * percent);
-            }
-        }
-    }
-}
