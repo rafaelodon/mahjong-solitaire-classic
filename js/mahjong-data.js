@@ -21,7 +21,7 @@ function MahjongData() {
         var obj = Object.assign({},INITIAL_DATA);            
         if (data) {
             obj = JSON.parse(data);
-            if(obj.gameState && obj.gameState.board){            
+            if(obj.gameState && obj.gameState.board){                  
                 obj.gameState.board = Object.assign(new MahjongBoard({},[]), obj.gameState.board);
                 obj.gameState.tiles = obj.gameState.board.getTilesList().sort(MahjongUtils.compareTilesByRenderOrder);
                 obj.gameState.solver = Object.assign(new MahjongSolver(obj.gameState.board));

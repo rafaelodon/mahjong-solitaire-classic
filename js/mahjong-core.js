@@ -12,9 +12,9 @@
  *   keep existing on the tiles list and marked as 'removed'.
  * - A moves stack keep track of the pair removals, and they can be undone.
  */
-function MahjongBoard(givenTilesMap, givenBoard){
+function MahjongBoard(givenTilesMap, givenBoard, givenMovesStack=[]){
 
-    this.movesStack = [];
+    this.movesStack = givenMovesStack;
     this.tilesMap = givenTilesMap;
     this.board = givenBoard;
     
@@ -58,7 +58,7 @@ MahjongBoard.prototype.removeTilesIfMatch = function(tile1, tile2, successCallba
         thisTile1.removed = true;
         thisTile2.removed = true;
 
-        this.movesStack.push([thisTile1,thisTile2]);
+        this.movesStack.push([thisTile1.id,thisTile2.id]);
 
         if(successCallback){
             successCallback();
@@ -94,7 +94,8 @@ MahjongBoard.prototype.isTileFree = function(tile) {
 MahjongBoard.prototype.undoLastMove = function(){
     var lastMove = this.movesStack.pop();    
     if(lastMove){
-        lastMove.forEach((tile) => {                                
+        lastMove.forEach((tileId) => {                                
+            var tile = this.tilesMap[tileId];
             tile.removed = false;                
             tile.alpha = 1.0; // TODO: alpha animation shuld be a wrapper
             MahjongUtils.addTileToBoard(tile, this.board, tile.x, tile.y, tile.z);

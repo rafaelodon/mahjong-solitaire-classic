@@ -11,7 +11,8 @@ var SOUND_FX = {
     "click" : { src: "audio/click.wav", volume: 0.5 },
     "horn" : { src: "audio/horn.wav", volume: 0.5 },
     "ah" : { src: "audio/ah.wav", volume: 0.5 },
-    "victory" : { src: "audio/victory.mp3", volume: 1.0 },
+    "victory" : { src: "audio/victory.mp3", volume: 0.5 },
+    "death" : { src: "audio/death.mp3", volume: 0.5 },
 }
 
 // Load audio files

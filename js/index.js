@@ -34,8 +34,7 @@ window.onload = () => {
         Object.assign(gameState, {            
             board: undefined,        
             tiles: [],
-            solver: undefined,
-            movesStack: [],
+            solver: undefined,            
             movesAvailable: 0,
             cursor: undefined,
             cursorTile: undefined,
@@ -177,8 +176,12 @@ window.onload = () => {
                     playSoundFx("vanish");
                     clearSelected();
                     calculateMovesLeft();
-                    if(gameState.board.hasFinished){
-                        onWinGame();
+                    if(gameState.movesAvailable == 0){
+                        if(gameState.board.hasFinished()){
+                            onWinGame();
+                        }else {
+                            onGameOver();
+                        }
                     }
                 },
                 () => {
@@ -221,6 +224,10 @@ window.onload = () => {
                 },count*100);
             }
         },2000);
+    }
+
+    function onGameOver() {
+        playSoundFx("death");
     }
 
     function onResize() {
