@@ -192,7 +192,7 @@ window.onload = () => {
                                                                  
                     if(gameState.board.hasFinished()){
                         onWinGame();
-                    }else if(gameState.board.movesAvailable == 0) {
+                    }else if(gameState.movesAvailable == 0) {
                         onGameOver();
                     }
                 },
@@ -266,9 +266,10 @@ window.onload = () => {
                     tr.className = "lastVictory";
                 }
                 var date = new Date(stat.date);
-                var dateString = date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate()+" "+date.getHours()+":"+date.getMinutes();
+                var dateString = date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate();
+                var hourString = (date.getHours() > 9 ? date.getHours() : "0"+date.getHours()) + +":"+date.getMinutes();                
                 tr.innerHTML = "<td>"+(i+1)+"</td>";
-                tr.innerHTML += "<td>"+dateString+"</td>";
+                tr.innerHTML += "<td>"+dateString+" "+hourString+"</td>";
                 tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
                 tr.innerHTML += "<td>"+stat.undos+" undos</td>";
                 rankingTable.appendChild(tr);
@@ -278,14 +279,17 @@ window.onload = () => {
         }                    
                 
         // scrolls to the last win row
-        var lastWinIndex = stats.ranking.findIndex((s)=>s.date == lastWinData.date);        
-        ranking.scrollTop = lastWinIndex * 20;
+        if(lastWinData){
+            var lastWinIndex = stats.ranking.findIndex((s)=>s.date == lastWinData.date);        
+            ranking.scrollTop = lastWinIndex * 20;
+        }
 
         modal.show({
             headerContent: "Ranking",
             bodyContent: ranking.outerHTML,
-            cancelButtonText: false,
-            okCallback: okCallback
+            cancelButtonText: "Clear",
+            okCallback: okCallback,
+            cancelCallback: mahjongData.clearStats
         }); 
     }
     

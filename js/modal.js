@@ -51,6 +51,7 @@ Modal.prototype.show = function({
     // hides Ok Button if its text is undefined
     if(okButtonText){
         this.modalOkButton.style.display = "visible"; 
+        this.modalOkButton.innerHTML = okButtonText;
     }else{
         this.modalOkButton.style.display = "none"; 
     }
@@ -58,6 +59,7 @@ Modal.prototype.show = function({
     // hides Cancel Button if its text is undefined
     if(cancelButtonText){
         this.modalCancelButton.style.display = "visible"; 
+        this.modalCancelButton.innerHTML = cancelButtonText;
     }else{        
         this.modalCancelButton.style.display = "none"; 
     }        
