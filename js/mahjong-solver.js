@@ -4,7 +4,13 @@
  * @author Rafael Odon <odon.rafael@gmail.com>
  * @param {MahjongBoard} mahjongBoard    
  */
-function MahjongSolver(mahjongBoard){     
+function MahjongSolver(mahjongBoard){
+    
+    var moves = [];
+
+    this.getMoves = () => {
+        return moves;
+    }
 
     /**     
      * @returns {Boolean}
@@ -94,6 +100,7 @@ function MahjongSolver(mahjongBoard){
                 var newBoard = step.mahjongBoard;                        
                 newBoard.removeTilesIfMatch(move[0], move[1]);
                 if(newBoard.hasFinished()){
+                    moves = newBoard.getMovesStack();
                     solved = true;
                 }else{
 
@@ -119,7 +126,7 @@ function MahjongSolver(mahjongBoard){
                     });
                 }            
             }
-        }
+        }        
         
         return solved;
     }

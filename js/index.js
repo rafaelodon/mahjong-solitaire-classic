@@ -29,6 +29,7 @@ window.onload = () => {
     timer = new Timer();
     mahjongData = new MahjongData();
     lastGameData = {};
+    lastWinData = undefined;
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -99,19 +100,30 @@ window.onload = () => {
         
         // generate a solvable board of stacked tiles
         var newBoard = [];
+        var solver = undefined;
         do{        
             console.log("Trying to generate a solvable board...")
             newBoard = distributeTilesClassicBoard();
-            solvable = new MahjongSolver(newBoard).isBoardSolvable();        
+            solver = new MahjongSolver(newBoard);
+            solvable = solver.isBoardSolvable();        
         }while(solvable != true);
         
+        // // fast forward 70 moves
+        // var moves = solver.getMoves();        
+        // for(var i=0; i<68; i++){
+        //     var move = moves.shift();
+        //     if(move){
+        //         newBoard.removeTilesIfMatch(newBoard.getTileById(move[0]),newBoard.getTileById(move[1]));
+        //     }
+        // }
         
         gameState.board = newBoard;
         gameState.tiles = newBoard.getTilesList().sort(MahjongUtils.compareTilesByRenderOrder);
         gameState.solver = new MahjongSolver(newBoard);                
-        calculateMovesLeft();
+        updateMovesLeft();
         timer.stop();      
         gameState.isRunning = true;
+        lastWinData = undefined;
     }
 
     function onMouseMove(e) {
@@ -176,13 +188,12 @@ window.onload = () => {
                     // success
                     playSoundFx("vanish");
                     clearSelected();
-                    calculateMovesLeft();
-                    if(gameState.movesAvailable == 0){
-                        if(gameState.board.hasFinished()){
-                            onWinGame();
-                        }else {
-                            onGameOver();
-                        }
+                    updateMovesLeft();
+                                                                 
+                    if(gameState.board.hasFinished()){
+                        onWinGame();
+                    }else if(gameState.board.movesAvailable == 0) {
+                        onGameOver();
                     }
                 },
                 () => {
@@ -198,70 +209,100 @@ window.onload = () => {
         }              
     }
 
+    function updateMovesLeft(){
+        gameState.movesAvailable = gameState.solver.countMovestLeft();
+        gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;    
+    }
+
     function onWinGame(){        
-        setTimeout(() => {
-            if(gameState.hasWon == false){
-                gameState.hasWon = true;      
-                playSoundFx("victory");
-                updateStats();
-                mahjongData.clearGameData();
+        if(gameState.hasWon == false){
+            gameState.hasWon = true;  
+            gameState.topBarMessage = "🏆 Congratulations!";
+            timer.pause();    
+            playSoundFx("victory");
+            updateStats();
+            mahjongData.clearGameData();
+            disableButtons();
+            setTimeout(() => {                                                            
                 var count=0;
+                var inverval=30;
                 for(var aZ=0; aZ<MAX_Z; aZ++){                
                     winAnimationArray = gameState.tiles.filter((t)=>t.z==aZ);                                                                                
                     var tile1,tile2=undefined;
                     while(winAnimationArray.length > 0){                        
                         tile1 = winAnimationArray.shift();                       
-                        if(tile1){
-                            setTimeout(setupTileForWinAnimation, (count++)*100, tile1)                        
+                        if(tile1){                            
+                            setTimeout(setupTileForWinAnimation, (count++)*inverval, tile1)                        
                         }
 
                         tile2 = winAnimationArray.pop();                    
-                        if(tile2){
-                            setTimeout(setupTileForWinAnimation, (count++)*100, tile2, false)
+                        if(tile2){                            
+                            setTimeout(setupTileForWinAnimation, (count++)*inverval, tile2, false)
                         }                    
                     }   
+                    inverval+=2;
                 }                
-                setTimeout(showRanking(),count*100+1000);
-            }
-        },2000);
+                // show ranking modal with a start-new-game callback on the ok button
+                setTimeout(showRanking,count*inverval+500,(modal)=>{                    
+                    modal.hide();                    
+                    startNewGame();                    
+                });
+            },500);
+        }
     }
 
-    function showRanking(){
+    function showRanking(okCallback=undefined){
         var stats = mahjongData.loadGameStats();
-        var ranking = document.getElementById("rankingTable"); 
-        ranking.innerHTML = "(empty)";
+        var ranking = document.getElementById("ranking"); 
+        var rankingTable = document.getElementById("rankingTable");   
+        
+        //generates a ranking table form the stats
         if(stats && stats.ranking && stats.ranking.length > 0){
-            stats.ranking.sort((a,b) => a.seconds - b.seconds);
-            ranking.innerHTML = "";
+            stats.ranking.sort((a,b) => a.ellapsedMillliseconds - b.ellapsedMillliseconds);
+            rankingTable.innerHTML = "";
             stats.ranking.forEach((stat,i)=>{
                 var tr = document.createElement("tr")
+                if(lastWinData && stat.date == lastWinData.date){
+                    tr.className = "lastVictory";
+                }
                 var date = new Date(stat.date);
-                var dateString = date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate();
+                var dateString = date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate()+" "+date.getHours()+":"+date.getMinutes();
                 tr.innerHTML = "<td>"+(i+1)+"</td>";
                 tr.innerHTML += "<td>"+dateString+"</td>";
-                tr.innerHTML += "<td>"+stat.seconds+" s</td>";
+                tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
                 tr.innerHTML += "<td>"+stat.undos+" undos</td>";
-                ranking.appendChild(tr);
+                rankingTable.appendChild(tr);
             });            
-        }            
+        }else{
+            rankingTable.innerHTML = "(empty)";
+        }                    
+                
+        // scrolls to the last win row
+        var lastWinIndex = stats.ranking.findIndex((s)=>s.date == lastWinData.date);        
+        ranking.scrollTop = lastWinIndex * 20;
+
         modal.show({
-            headerContent: "Your Ranking",
+            headerContent: "Ranking",
             bodyContent: ranking.outerHTML,
-            cancelButtonText: false
+            cancelButtonText: false,
+            okCallback: okCallback
         }); 
     }
     
     function updateStats(){        
-        var stats = mahjongData.loadGameStats();
-        stats.ranking.push({
+        var stats = mahjongData.loadGameStats();        
+        lastWinData = {
             date: Date.now(),
-            seconds: timer.getEllapsedMillliseconds(),
+            ellapsedMillliseconds: timer.getEllapsedMillliseconds(),
             undos: gameState.undos
-        });
+        };
+        stats.ranking.push(lastWinData);
         mahjongData.saveGameStats(stats);
     }
 
     function onGameOver() {
+        gameState.topBarMessage = "💀 Game Over...";
+        timer.pause();
         playSoundFx("death");
     }
 
@@ -296,51 +337,33 @@ window.onload = () => {
         gameState.tileThickness = gameState.tileWidth / 8 * gameState.ratio;    
     }
 
-    function calculateMovesLeft(){    
-        gameState.movesAvailable = gameState.solver.countMovestLeft();        
-    }
-
     function update() {        
 
         if(gameState && gameState.isRunning){
 
-            updateCursorTile();
-
-            // top bar message
-            if(gameState.movesAvailable != undefined){                                        
-                if(gameState.movesAvailable > 0){
-                    gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;
-                }else if(gameState.board.hasFinished()){                    
-                    gameState.topBarMessage = "🏆 Congratulations!";
-                    timer.pause();
-                }else {
-                    gameState.topBarMessage = "💀 Game Over...";
-                    timer.pause();
-                }
-            }
+            updateCursorTile();           
             
-            // tile removal animation
-            if(gameState.hasWon != true){
-                gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {
-                    tile.alpha = tile.alpha - 0.1;
-                    if (tile.alpha < 0.01) {
-                        tile.alpha = 0;
-                    }        
-                });        
-            }
+            // tile removal animation            
+            gameState.tiles.filter((t) => t.removed && t.alpha > 0).forEach((tile) => {
+                tile.alpha = tile.alpha - 0.1;
+                if (tile.alpha < 0.01) {
+                    tile.alpha = 0;
+                }        
+            });            
 
             TweenManager.update();
         }
     }
 
     function setupTileForWinAnimation(tile,down=true){
-        tile.alpha = 1.0;
+        tile.removed = false;
+        tile.alpha = 1.0;        
         TweenManager.addTween(new Tween({
             obj:tile,
             key:"y",
             initialValue: down ? 0 : MAX_Y+1,
             endValue: tile.y,
-            durationMs: 1000*(down ? 1-(tile.y/MAX_Y) : tile.y/MAX_Y),
+            durationMs: 400*(down ? 1-(tile.y/MAX_Y) : tile.y/MAX_Y),
             type: TweenType.EASE_LOG            
         }).start());   
     }
@@ -458,7 +481,8 @@ window.onload = () => {
     var loader = document.getElementById("loader");
     var container = document.getElementById("container")
 
-    document.getElementById("btnNewGame").addEventListener("click", () => {    
+    var btnNewGame = document.getElementById("btnNewGame");
+    btnNewGame.addEventListener("click", () => {    
         modal.show({
             headerContent: "New Game",
             bodyContent: "Restart the game and shuffe the tiles?",
@@ -468,25 +492,28 @@ window.onload = () => {
             }
         });
     });
-    
-    document.getElementById("btnUndo").addEventListener("click", () => {    
+
+    var btnUndo = document.getElementById("btnUndo");
+    btnUndo.addEventListener("click", () => {    
         if(!gameState.hasWon && gameState.board.undoLastMove()){                    
             timer.startOrResume();
             gameState.undos += 1;
             playSoundFx("horn");    
             clearSelected();
-            calculateMovesLeft();
+            updateMovesLeft();
         }
     });
     
-    document.getElementById("btnHint").addEventListener("click", () => {                    
+    var btnHint = document.getElementById("btnHint");
+    btnHint.addEventListener("click", () => {                    
         gameState.hint = gameState.solver.getBestNextMove();        
         if(gameState.hint){
             playSoundFx("ah");
         }        
     });
 
-    document.getElementById("btnSound").addEventListener("click", () => {                    
+    var btnSound = document.getElementById("btnSound")
+    btnSound.addEventListener("click", () => {                    
         gameState.soundOn = !gameState.soundOn;        
         document.getElementById("btnSound").innerText = gameState.soundOn ? "Sound Off" : "Sound On";
         if(gameState.soundOn){
@@ -494,7 +521,8 @@ window.onload = () => {
         }
     });
 
-    document.getElementById("btnRanking").addEventListener("click", () => {                                    
+    var btnRanking = document.getElementById("btnRanking");
+    btnRanking.addEventListener("click", () => {                                    
         showRanking();       
     });
 
@@ -515,10 +543,21 @@ window.onload = () => {
     
     function startNewGame() {
         showLoader();
-        setTimeout(() => {
+        setTimeout(() => {            
             initGameWithClassicDisposition();
-            hideLoader();            
+            hideLoader(); 
+            enableButtons();           
         },50);        
+    }
+
+    function disableButtons() {
+        var buttons = [btnHint, btnNewGame, btnRanking, btnSound, btnUndo];
+        buttons.forEach((button) => button.disabled = true);
+    }
+
+    function enableButtons() {
+        var buttons = [btnHint, btnNewGame, btnRanking, btnSound, btnUndo];
+        buttons.forEach((button) => button.disabled = false);
     }
 
     function showLoader() {

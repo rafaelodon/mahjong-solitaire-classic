@@ -127,13 +127,13 @@ canvas{
 
 /* RANKING */
 #ranking{
-    display: none;
-}
-
-#rankingTable{    
-    height: 40vh;
+    height: 40vh;    
     width: 80vw;
     overflow-y: auto;
+}
+
+#rankingTable{        
+    width: 100%;    
     border-spacing: 0;
 }
 
@@ -141,6 +141,8 @@ canvas{
 #rankingTable tr{    
     margin:0px;
     padding:0px;
+    height: 1em;
+    line-height: 1em;
 }
 
 #rankingTable tr{
@@ -155,4 +157,11 @@ canvas{
     font-weight: bold;
 }
 
+#rankingTable tr.lastVictory{
+    font-weight: bold;
+    color: crimson;
+}
 
+.hidden{
+    display: none;
+}
