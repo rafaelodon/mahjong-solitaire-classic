@@ -18,7 +18,7 @@ function MahjongData() {
 
     this.loadGameData = function (){
         var data = window.localStorage.getItem(STORAGE_DATA);
-        var obj = Object.assign({},INITIAL_DATA);            
+        var obj = JSON.parse(JSON.stringify(INITIAL_DATA));            
         if (data) {
             obj = JSON.parse(data);
             if(obj.gameState && obj.gameState.board){                  
@@ -35,11 +35,11 @@ function MahjongData() {
     }
 
     this.loadGameStats = function () {
-        let data = window.localStorage.getItem(STORAGE_STATS);
-        if (data) {
+        var data = window.localStorage.getItem(STORAGE_STATS);
+        if (data) {            
             return JSON.parse(data);
-        } else {
-            return Object.assign({},INITIAL_STATS);
+        } else {            
+            return JSON.parse(JSON.stringify(INITIAL_STATS));
         }
     }
 
@@ -48,10 +48,10 @@ function MahjongData() {
     }
 
     this.clearData = function (){
-        window.localStorage.setItem(STORAGE_DATA, "");
+        window.localStorage.removeItem(STORAGE_DATA);
     }
 
     this.clearStats = function (){
-        window.localStorage.setItem(STORAGE_STATS, "");
+        window.localStorage.removeItem(STORAGE_STATS);
     }
 }

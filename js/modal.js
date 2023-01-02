@@ -25,15 +25,17 @@ function Modal({
     this.modalOkButton.addEventListener('click', () => {
         if(this.innerOkCallback){
             this.innerOkCallback(this);
+        }else{
+            this.hide();
         }
-        this.hide();
     });    
 
     this.modalCancelButton.addEventListener('click', () => {
         if(this.innerCancelCallback){
             this.innerCancelCallback(this);
+        }else{
+            this.hide();
         }
-        this.hide();
     }); 
 }       
     

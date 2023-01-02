@@ -108,7 +108,7 @@ window.onload = () => {
             solvable = solver.isBoardSolvable();        
         }while(solvable != true);
         
-        // // fast forward 70 moves
+        // // fast forward 70 moves (dev debug)
         // var moves = solver.getMoves();        
         // for(var i=0; i<68; i++){
         //     var move = moves.shift();
@@ -225,7 +225,7 @@ window.onload = () => {
             disableButtons();
             setTimeout(() => {                                                            
                 var count=0;
-                var inverval=30;
+                var inverval=40;
                 for(var aZ=0; aZ<MAX_Z; aZ++){                
                     winAnimationArray = gameState.tiles.filter((t)=>t.z==aZ);                                                                                
                     var tile1,tile2=undefined;
@@ -253,12 +253,19 @@ window.onload = () => {
 
     function showRanking(okCallback=undefined){
         var stats = mahjongData.loadGameStats();
-        var ranking = document.getElementById("ranking"); 
-        var rankingTable = document.getElementById("rankingTable");   
+        
+        var ranking = document.createElement("div");
+        var rankingTable = document.createElement("table");
+        ranking.className = "ranking";
+        rankingTable.className = "rankingTable";
+        ranking.appendChild(rankingTable);
         
         //generates a ranking table form the stats
         if(stats && stats.ranking && stats.ranking.length > 0){
-            stats.ranking.sort((a,b) => a.ellapsedMillliseconds - b.ellapsedMillliseconds);
+            stats.ranking.sort((a,b) => {                
+                var r = Math.round(a.ellapsedMillliseconds/1000) - Math.round(b.ellapsedMillliseconds/1000);
+                return r != 0 ? r : a.undos - b.undos;
+            } );
             rankingTable.innerHTML = "";
             stats.ranking.forEach((stat,i)=>{
                 var tr = document.createElement("tr")
@@ -266,17 +273,17 @@ window.onload = () => {
                     tr.className = "lastVictory";
                 }
                 var date = new Date(stat.date);
-                var dateString = date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate();
-                var hourString = (date.getHours() > 9 ? date.getHours() : "0"+date.getHours()) + +":"+date.getMinutes();                
-                tr.innerHTML = "<td>"+(i+1)+"</td>";
+                var dateString = date.getFullYear()+"-"+zeroPad(date.getMonth()+1)+"-"+zeroPad(date.getDate());
+                var hourString = zeroPad(date.getHours()) + ":" + zeroPad(date.getMinutes());
+                tr.innerHTML = "<td>#"+(i+1)+"</td>";
                 tr.innerHTML += "<td>"+dateString+" "+hourString+"</td>";
                 tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
-                tr.innerHTML += "<td>"+stat.undos+" undos</td>";
+                tr.innerHTML += "<td>"+stat.undos+" undo(s)</td>";
                 rankingTable.appendChild(tr);
-            });            
+            });
         }else{
-            rankingTable.innerHTML = "(empty)";
-        }                    
+            ranking.innerHTML = "(empty)";
+        }
                 
         // scrolls to the last win row
         if(lastWinData){
@@ -289,8 +296,25 @@ window.onload = () => {
             bodyContent: ranking.outerHTML,
             cancelButtonText: "Clear",
             okCallback: okCallback,
-            cancelCallback: mahjongData.clearStats
+            cancelCallback: (modal) => {                
+                modal.show({
+                    headerContent: "Clear rank?",
+                    bodyContent: "All the past games records will be cleared.",
+                    okCallback: () => {
+                        lastWinData = undefined;
+                        mahjongData.clearStats();
+                        showRanking(okCallback);
+                    },
+                    cancelCallback: () => {
+                        showRanking(okCallback);
+                    }
+                });
+            }
         }); 
+    }
+
+    function zeroPad(num){
+        return num > 9 ? num : "0"+num;
     }
     
     function updateStats(){        
@@ -367,7 +391,7 @@ window.onload = () => {
             key:"y",
             initialValue: down ? 0 : MAX_Y+1,
             endValue: tile.y,
-            durationMs: 400*(down ? 1-(tile.y/MAX_Y) : tile.y/MAX_Y),
+            durationMs: 600*(down ? 1-(tile.y/MAX_Y) : tile.y/MAX_Y),
             type: TweenType.EASE_LOG            
         }).start());   
     }
@@ -592,14 +616,16 @@ window.onload = () => {
                 modal.show({
                     headerContent: "Resume",
                     bodyContent: "Do you want to resume the last game?",
-                    okCallback: () => {                                    
+                    okCallback: (modal) => {                                    
                         gameState = lastGameData.gameState;
                         gameState.isRunning = true;  
                         calculateDimensions();
-                        timer.startOrResume(lastGameData.ellapsedMillliseconds)                                        
+                        timer.startOrResume(lastGameData.ellapsedMillliseconds)
+                        modal.hide();
                     },
-                    cancelCallback: () => {
-                        startNewGame();                    
+                    cancelCallback: (modal) => {
+                        startNewGame();
+                        modal.hide();
                     }
                 });
             }else{                

@@ -126,38 +126,38 @@ canvas{
   
 
 /* RANKING */
-#ranking{
+.ranking{
     height: 40vh;    
     width: 80vw;
     overflow-y: auto;
 }
 
-#rankingTable{        
+.rankingTable{        
     width: 100%;    
     border-spacing: 0;
 }
 
-#rankingTable td,
-#rankingTable tr{    
+.rankingTable td,
+.rankingTable tr{    
     margin:0px;
     padding:0px;
     height: 1em;
     line-height: 1em;
 }
 
-#rankingTable tr{
+.rankingTable tr{
     border-top: 1px solid #576E62;
 }
 
-#rankingTable tr:nth-child(odd){
+.rankingTable tr:nth-child(odd){
     background-color: #cfe3d9;
 }
 
-#rankingTable tr td:first-child{
+.rankingTable tr td:first-child{
     font-weight: bold;
 }
 
-#rankingTable tr.lastVictory{
+.rankingTable tr.lastVictory{
     font-weight: bold;
     color: crimson;
 }
