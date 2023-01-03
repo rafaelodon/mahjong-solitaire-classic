@@ -14,9 +14,13 @@ var MahjongUtils = {
     // Create tiles on the given board rect
     fillBoard : (board, tiles, x1, y1, x2, y2, z) => {
         for (var y = y1; y <= y2; y += 2) {
-            for (var x = x1; x <= x2; x += 2) {
-                var tile = tiles.pop();
-                MahjongUtils.addTileToBoard(tile, board, x, y, z);
+            for (var x = x1; x <= x2; x += 2) {                                
+                if(Array.isArray(tiles)){
+                    var tile =  tiles.pop;
+                    MahjongUtils.addTileToBoard(tile, board, x, y, z);
+                }else{
+                    board[z][y][x] = null;                    
+                }
             }
         }
     },
@@ -49,5 +53,10 @@ var MahjongUtils = {
         var rY = b.y - a.y;
         var rX = b.x - a.x;
         return rZ != 0 ? rZ : rX != 0 ? rX : rY;          
+    },
+
+    // Shuffle an array
+    shuffleArray: (array) => {
+        array.sort((a, b) => 0.5 - Math.random())
     }
 }

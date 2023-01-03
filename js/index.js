@@ -56,7 +56,8 @@ window.onload = () => {
 
         // a random stack of tiles to be unstacked while filling the board
         var tilesStack = Object.values(tilesMap)
-        tilesStack.sort((a, b) => 0.5 - Math.random());    
+        MahjongUtils.shuffleArray(tilesStack);    
+        tilesStack = null;
 
         //central stacked rectangles
         MahjongUtils.fillBoard(board, tilesStack, 7, 1, 21, 15, 0);
@@ -88,6 +89,8 @@ window.onload = () => {
         //8th line extra tiles
         MahjongUtils.fillBoard(board, tilesStack, 3, 15, 5, 15, 0);
         MahjongUtils.fillBoard(board, tilesStack, 23, 15, 25, 15, 0);
+
+        disposeTilesOnEmptyBoard(Object.values(tilesMap), board);        
 
         return new MahjongBoard(tilesMap, board);
     }
@@ -123,7 +126,72 @@ window.onload = () => {
         updateMovesLeft();
         timer.stop();      
         gameState.isRunning = true;
-        lastWinData = undefined;
+        lastWinData = undefined;        
+    }
+
+    /**
+     * 
+     * @param {Array} tiles 
+     * @param {Array} board 
+     */
+    function disposeTilesOnEmptyBoard(tiles, board){    
+                
+        // group tiles that match
+        var groups = {};        
+        tiles.forEach((tile) => {
+            if(!(tile.group in groups)){
+                groups[tile.group] = [];    
+            }
+            groups[tile.group].push(tile);
+        });
+        
+        // generate an array of random tile pairs
+        var pairs = [];
+        Object.values(groups).forEach((group) => {
+            MahjongUtils.shuffleArray(group);
+            while(group.length > 0){
+                pairs.push([group.pop(), group.pop()]);
+            }
+        });
+        MahjongUtils.shuffleArray(pairs);
+
+        while(pairs.length > 0){            
+            var pair = pairs.pop();            
+            var tile1 = pair[0];
+            var tile2 = pair[1];
+            
+            var posT1 = findAFreePosition(board);
+            if(posT1){
+                MahjongUtils.addTileToBoard(tile1, board, posT1.x, posT1.y, posT1.z);            
+            }            
+
+            var posT2 = findAFreePosition(board);
+            if(posT2){
+                MahjongUtils.addTileToBoard(tile2, board, posT2.x, posT2.y, posT2.z);
+            }
+        }
+    }
+
+    function findAFreePosition(board){
+        var positions = [];
+        for (var z = 0; z < board.length; z++) {            
+            for (var y = 0; y < board[z].length; y++) {  
+                for (var x = 0; x < board[z][y].length; x++) {                                          
+                    var isFree = board[z][y][x] === null;
+                    //var isNotBelowAnother = z < MAX_Z-1 && board[z+1][y][x] === null;
+                    var isGrounded = z == 0 || (z > 0 && board[z-1][y][x]);
+                    var isOffsetFree = (z==4) || (y % 2 != 0) || (y % 2 == 0 && (board[z][y][x-1] || board[z][y][x+2]));
+                    if(isFree && isGrounded && isOffsetFree){                        
+                        positions.push({x:x, y:y, z:z});
+                    }
+                }
+            }
+        }        
+        if(positions.length > 0){
+            var index = Math.round(Math.random()*(positions.length-1));
+            var position = positions[index];                     
+            return position;
+        }      
     }
 
     function onMouseMove(e) {

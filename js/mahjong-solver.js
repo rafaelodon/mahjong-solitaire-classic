@@ -18,11 +18,11 @@ function MahjongSolver(mahjongBoard){
     this.isBoardSolvable = function(){            
                 
         if(isBoardMalformedSamePiecesStacked(mahjongBoard)){
-            return false;
+             return false;
         }
 
         if(isBoardMalformedSamePiecesSequenced(mahjongBoard)){
-            return false;
+             return false;
         }
 
         return isBoardSolvableStacked(mahjongBoard)
@@ -37,10 +37,11 @@ function MahjongSolver(mahjongBoard){
     function isBoardMalformedSamePiecesStacked(mahjongBoard){
         for(var x=0; x<MAX_X; x+=2){
             for(var y=0; y<MAX_Y; y+=2){
-                for(var z=1; z<MAX_Z; z++){
+                for(var z=2; z<MAX_Z; z++){
                     var t1 = mahjongBoard.getTileAt(x, y, z);
                     var t2 = mahjongBoard.getTileAt(x, y, z-1);
-                    if(t1 && t1 && t1.tileType == t2.tileType){
+                    var t3 = mahjongBoard.getTileAt(x, y, z-2);
+                    if(t1 && t2 && t3 && t1.tileType == t2.tileType && t1.tileType == t3.tileType){
                         console.debug("Bad tiles stack");
                         return true;
                     }
