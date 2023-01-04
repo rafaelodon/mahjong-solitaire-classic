@@ -244,10 +244,8 @@ window.onload = () => {
         
         if(gameState.movesAvailable > 0 && gameState.cursorTile){
 
-            // starts timing
-            if(!timer.isRunning()){
-                timer.reset();                
-            }   
+            // starts/resume timing            
+            timer.startOrResume();
 
             gameState.board.removeTilesIfMatch(
                 gameState.selectedTile,
@@ -265,10 +263,12 @@ window.onload = () => {
                     }
                 },
                 () => {
-                    // if no removal happend, selects the cursor tile
-                    playSoundFx("click");
-                    clearSelected();
-                    gameState.selectedTile = gameState.cursorTile;                 
+                    // if no removal happend, selects the cursor tile                    
+                    if(gameState.selectedTile != gameState.cursorTile){
+                        playSoundFx("click");
+                        clearSelected();
+                        gameState.selectedTile = gameState.cursorTile;
+                    }
                 }
             );
         }else{
@@ -487,8 +487,7 @@ window.onload = () => {
                 if (tile.alpha > 0) {
 
                     ctx.setTransform(1, 0, 0, 1, 0, 0);            
-                    ctx.globalAlpha = tile.alpha;
-                    ctx.lineWidth = 0.1;
+                    ctx.globalAlpha = tile.alpha;                    
                 
                     // translate to the tile position
                     var pZ = (tile.z + 1) * tileThickness;
@@ -496,6 +495,8 @@ window.onload = () => {
                     var pY = tile.y * tileHeight / 2 + pZ;
                     ctx.translate(pX, pY);
 
+                    ctx.lineWidth = 0.1;
+                    
                     // shadow
                     var shadowColor = "rgb(100,100,100,1)";
                     ctx.fillStyle = shadowColor;
@@ -547,7 +548,7 @@ window.onload = () => {
                     ctx.stroke();
                     
                     // tile image
-                    ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);                                    
+                    ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);
                 }
             });
         }
@@ -566,8 +567,7 @@ window.onload = () => {
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseout", onMouseOut);
-    canvas.addEventListener("touchstart", onMouseMove);
-    canvas.addEventListener("touchend", onMouseDown);
+    canvas.addEventListener("touchstart", onMouseDown);    
     window.addEventListener("resize", onResize);
     calculateDimensions();    
 
@@ -646,6 +646,15 @@ window.onload = () => {
         },50);        
     }
 
+    function resumeLastGame() {
+        gameState = lastGameData.gameState;
+        gameState.isRunning = true;  
+        calculateDimensions();
+        console.log("last game time",lastGameData.ellapsedMillliseconds);
+        timer.startOrResume(lastGameData.ellapsedMillliseconds);                        
+        timer.pause();
+    }
+
     function disableButtons() {
         var buttons = [btnHint, btnNewGame, btnRanking, btnSound, btnUndo];
         buttons.forEach((button) => button.disabled = true);
@@ -682,13 +691,10 @@ window.onload = () => {
                 && !lastGameData.gameState.board.hasFinished()){                
                 hideLoader();
                 modal.show({
-                    headerContent: "Resume",
+                    headerConte2dcontext jnt: "Resume",
                     bodyContent: "Do you want to resume the last game?",
                     okCallback: (modal) => {                                    
-                        gameState = lastGameData.gameState;
-                        gameState.isRunning = true;  
-                        calculateDimensions();
-                        timer.startOrResume(lastGameData.ellapsedMillliseconds)
+                        resumeLastGame();
                         modal.hide();
                     },
                     cancelCallback: (modal) => {

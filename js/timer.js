@@ -2,23 +2,23 @@ function Timer(){
     this.ellapsedMilliseconds = 0;
     this.running = false;        
 
-    this.startOrResume = function(givenEllapsedMilliseconds=undefined){        
+    this.startOrResume = function(givenEllapsedMilliseconds=undefined){              
         if(givenEllapsedMilliseconds){
             this.ellapsedMilliseconds = givenEllapsedMilliseconds;
         }
         this.running = true;
     }
 
-    this.pause = function(){
+    this.pause = function(){        
         this.running = false;
     }
 
-    this.stop = function(){
+    this.stop = function(){        
         this.running = false;
         this.ellapsedMilliseconds = 0;
     }
 
-    this.reset = function(){
+    this.reset = function(){        
         this.stop();        
         this.startOrResume();
     }

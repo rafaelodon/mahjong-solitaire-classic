@@ -67,7 +67,7 @@ Object.keys(TILES_TYPES).forEach((key) => {
         console.log("Image",this.src,"loaded");
         tileType.loaded = true;        
     };
-    tileType.image.src = "img/tiles/"+key+".svg";
+    tileType.image.src = "img/tiles/"+key+".svg";    
 });
 
 function generateTilesMap() {
