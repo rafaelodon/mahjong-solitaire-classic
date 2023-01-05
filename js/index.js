@@ -104,16 +104,21 @@ window.onload = () => {
         // generate a solvable board of stacked tiles
         var newBoard = [];
         var solver = undefined;
-        do{        
-            console.log("Trying to generate a solvable board...")
-            newBoard = distributeTilesClassicBoard();
-            solver = new MahjongSolver(newBoard);
-            solvable = solver.isBoardSolvable();        
+        var solvable = false;
+        do{                    
+            try{
+                console.log("Trying to generate a solvable board...")
+                newBoard = distributeTilesClassicBoard();
+                solver = new MahjongSolver(newBoard);
+                solvable = solver.isBoardSolvable();        
+            }catch(e){
+                console.error(e);
+            }
         }while(solvable != true);
         
-        // // fast forward 70 moves (dev debug)
+        // fast forward 70 moves (dev debug)        
         // var moves = solver.getMoves();        
-        // for(var i=0; i<68; i++){
+        // for(var i=0; i<71; i++){
         //     var move = moves.shift();
         //     if(move){
         //         newBoard.removeTilesIfMatch(newBoard.getTileById(move[0]),newBoard.getTileById(move[1]));
@@ -155,43 +160,56 @@ window.onload = () => {
         });
         MahjongUtils.shuffleArray(pairs);
 
-        while(pairs.length > 0){            
+        while(pairs.length > 0){
+
             var pair = pairs.pop();            
             var tile1 = pair[0];
             var tile2 = pair[1];
             
-            var posT1 = findAFreePosition(board);
+            var posT1 = findAFreePosition(board,undefined,pairs.length==0);
             if(posT1){
-                MahjongUtils.addTileToBoard(tile1, board, posT1.x, posT1.y, posT1.z);            
-            }            
-
-            var posT2 = findAFreePosition(board);
+                MahjongUtils.addTileToBoard(tile1, board, posT1.x, posT1.y, posT1.z);                            
+            }
+            
+            var posT2 = findAFreePosition(board,tile1,pairs.length==0);            
             if(posT2){
-                MahjongUtils.addTileToBoard(tile2, board, posT2.x, posT2.y, posT2.z);
+                MahjongUtils.addTileToBoard(tile2, board, posT2.x, posT2.y, posT2.z);                              
             }
         }
     }
 
-    function findAFreePosition(board){
+    function TilePositioningException() {}
+
+    function findAFreePosition(board,pair,last=false){
         var positions = [];
         for (var z = 0; z < board.length; z++) {            
-            for (var y = 0; y < board[z].length; y++) {  
+            for (var y = 0; y < board[z].length; y++) {
                 for (var x = 0; x < board[z][y].length; x++) {                                          
-                    var isFree = board[z][y][x] === null;
-                    //var isNotBelowAnother = z < MAX_Z-1 && board[z+1][y][x] === null;
-                    var isGrounded = z == 0 || (z > 0 && board[z-1][y][x]);
-                    var isOffsetFree = (z==4) || (y % 2 != 0) || (y % 2 == 0 && (board[z][y][x-1] || board[z][y][x+2]));
-                    if(isFree && isGrounded && isOffsetFree){                        
+                    var isFree = board[z][y][x] === null;                    
+                    var isGrounded = z == 0 || (z > 0 && board[z-1][y][x]);                    
+                    var rowLength = board[z][y].filter((e)=>e).length;                    
+                    var hasNeighbour = (x>0 && board[z][y][x-1]) || (x < MAX_X-3 && board[z][y][x+2]);
+                    var firstOrBeside = rowLength == 0 || hasNeighbour;
+                    var blocksPairBeside = pair && rowLength > 1 && (z == pair.z && y == pair.y && (x == pair.x+2 || x == pair.x-2));
+                    var blocksPairBelow = pair && (x == pair.x && y == pair.y && z == pair.z+1);                    
+                    var isOffsetFree = (z==4) || (y % 2 != 0) || (y % 2 == 0 && (hasNeighbour));
+                    
+                    if(isFree && isGrounded && (last || (isOffsetFree && firstOrBeside && !blocksPairBelow && !blocksPairBeside))){                                        
                         positions.push({x:x, y:y, z:z});
                     }
                 }
             }
+            if(positions.length > 0){
+                break;
+            }
         }        
         if(positions.length > 0){
             var index = Math.round(Math.random()*(positions.length-1));
-            var position = positions[index];                     
-            return position;
-        }      
+            var position = positions[index];                           
+            return position;            
+        }else{
+            throw new TilePositioningException();
+        }
     }
 
     function onMouseMove(e) {
@@ -353,10 +371,22 @@ window.onload = () => {
             ranking.innerHTML = "(empty)";
         }
                 
-        // scrolls to the last win row
-        if(lastWinData){
-            var lastWinIndex = stats.ranking.findIndex((s)=>s.date == lastWinData.date);        
-            ranking.scrollTop = lastWinIndex * 20;
+        // scrolls to the last win row if necessary
+        if(lastWinData){            
+            setTimeout(()=> {                                
+                var rankingHeight = document.getElementsByClassName("ranking")[0].clientHeight;
+                var winTop = document.getElementsByClassName("lastVictory")[0].offsetTop;
+                if(winTop > rankingHeight-10){
+                    TweenManager.addTween(new Tween({
+                        obj:document.getElementsByClassName("ranking")[0],
+                        key:"scrollTop",
+                        initialValue: 0,
+                        endValue: winTop-40,
+                        durationMs: 800,
+                        type: TweenType.EASE_IN
+                    }).start());
+                }
+            },500);
         }
 
         modal.show({
@@ -434,7 +464,6 @@ window.onload = () => {
     }
 
     function update() {        
-
         if(gameState && gameState.isRunning){
 
             updateCursorTile();           
@@ -445,10 +474,10 @@ window.onload = () => {
                 if (tile.alpha < 0.01) {
                     tile.alpha = 0;
                 }        
-            });            
-
-            TweenManager.update();
+            });
         }
+
+        TweenManager.update();
     }
 
     function setupTileForWinAnimation(tile,down=true){
@@ -460,7 +489,7 @@ window.onload = () => {
             initialValue: down ? 0 : MAX_Y+1,
             endValue: tile.y,
             durationMs: 600*(down ? 1-(tile.y/MAX_Y) : tile.y/MAX_Y),
-            type: TweenType.EASE_LOG            
+            type: TweenType.EASE_IN_OUT            
         }).start());   
     }
 
@@ -685,13 +714,14 @@ window.onload = () => {
             setTimeout(loadAndRun, 100);        
         }else{
             Loop.run({ draw: draw, update: update });
+            
             // check if there's a ongoing game to be resumed                               
             lastGameData = mahjongData.loadGameData();    
             if(lastGameData.gameState && lastGameData.gameState.board 
                 && !lastGameData.gameState.board.hasFinished()){                
                 hideLoader();
                 modal.show({
-                    headerConte2dcontext jnt: "Resume",
+                    headerContent: "Resume",
                     bodyContent: "Do you want to resume the last game?",
                     okCallback: (modal) => {                                    
                         resumeLastGame();
@@ -704,7 +734,7 @@ window.onload = () => {
                 });
             }else{                
                 startNewGame();        
-            }            
+            }                     
         }
     }
         

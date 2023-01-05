@@ -42,7 +42,7 @@ function MahjongSolver(mahjongBoard){
                     var t2 = mahjongBoard.getTileAt(x, y, z-1);
                     var t3 = mahjongBoard.getTileAt(x, y, z-2);
                     if(t1 && t2 && t3 && t1.tileType == t2.tileType && t1.tileType == t3.tileType){
-                        console.debug("Bad tiles stack");
+                        console.info("Bad tiles stack");
                         return true;
                     }
                 }
@@ -66,7 +66,7 @@ function MahjongSolver(mahjongBoard){
                     var t2 = mahjongBoard.getTileAt(x+2, y, z);                        
                     var t3 = mahjongBoard.getTileAt(x+4, y, z);
                     if(t1 && t2 && t3 && t1.tileType == t2.tileType && t1.tileType == t3.tileType){
-                        console.debug("Bad tiles sequence");
+                        console.info("Bad tiles sequence");
                         return true;
                     }
                 }

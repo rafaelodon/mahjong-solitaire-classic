@@ -1,17 +1,18 @@
 var TweenType = {
-    EASE_LOG : "log",
-    EASE_EXP : "exp",
-    EASE_LINEAR : "linear"
+    EASE_IN : "log", // get slow until stop
+    EASE_OUT : "exp", // start slow, get fast
+    EASE_IN_OUT : "sin", // start slow, get fast, slow until stop    
+    EASE_LINEAR : "linear"    
 }
 
-function Tween({obj, key, initialValue, endValue, durationMs, type=EASE_LINEAR, onFinishCallback=undefined}={}){     
+function Tween({obj, key, initialValue, endValue, unit=undefined, durationMs, type=EASE_LINEAR, onFinishCallback=undefined}={}){     
     
     this.isRunning = false;
     this.hasFinished = false;
-    this.startTime = undefined;     
+    this.startTime = undefined;  
+    this.duration = durationMs / Loop.fps;
 
-    this.start = function (){
-        //console.log(obj.id);
+    this.start = function (){        
         this.startTime = Loop.lastTime;    
         obj[key] = initialValue;
         this.isRunning = true;
@@ -31,30 +32,34 @@ function Tween({obj, key, initialValue, endValue, durationMs, type=EASE_LINEAR, 
 
     this.update = function (){        
         if(this.isRunning){            
+            
+            var percent = (Loop.lastTime - this.startTime) / this.duration / Loop.fps;                        
+            percent = percent > 1.0 ? 1.0 : percent;
 
-            var percent = 1.0;
-            var loopCount = (Loop.lastTime - this.startTime) / (durationMs / Loop.fps)
-            if (type == TweenType.EASE_LOG) {
-                percent = Math.log10(1 + (loopCount / Loop.fps) * (9))
-            } else if (type == TweenType.EASE_EXP) {
-                percent = Math.exp(loopCount * Math.E / Loop.fps - 1) / (Math.E - 1)
-            } else {                     
-                percent = loopCount / Loop.fps;
+            if (type == TweenType.EASE_IN) {
+                percent = Math.sin(percent/2 * Math.PI);
+            } else if (type == TweenType.EASE_OUT) {
+                percent = 1-Math.cos((percent/2) * Math.PI);
+            } else if (type == TweenType.EASE_IN_OUT) {                 
+               percent = (Math.tanh(((percent*2)-0.5)*2*Math.PI)+1)*0.5;               
             }
             
-            if(percent < 0 || percent > 0.999){
+            if(percent < 0 || percent > 0.9999){
                 this.isRunning = false;
                 this.hasFinished = true;
-                obj[key] = endValue;
+                obj[key] = unit ? endValue + unit : endValue;
                 if(onFinishCallback){
                     onFinishCallback(this);
                 }
             }else{
-                obj[key] = initialValue + ((endValue - initialValue) * percent);
+                var finalValue = initialValue + ((endValue - initialValue) * percent);
+                obj[key] = unit ? finalValue + unit : finalValue;
             }
         }
     }    
 }
+
+
 
 var TweenManager = {
 
