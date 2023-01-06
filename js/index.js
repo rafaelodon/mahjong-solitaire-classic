@@ -117,12 +117,15 @@ window.onload = () => {
             }
         }while(solvable != true);
         
-        //fast forward 70 moves (dev debug)        
-        var moves = solver.getMoves();        
-        for(var i=0; i<71; i++){
-            var move = moves.shift();
-            if(move){
-                newBoard.removeTilesIfMatch(newBoard.getTileById(move[0]),newBoard.getTileById(move[1]));
+        // fast forward N moves (add the query parameter ?ff=N) (for debugging purposes)        
+        var ff = new URLSearchParams(window.location.search).get("ff");        
+        if(ff){            
+            var moves = solver.getMoves();        
+            for(var i=0; i<ff; i++){
+                var move = moves.shift();
+                if(move){
+                    newBoard.removeTilesIfMatch(newBoard.getTileById(move[0]),newBoard.getTileById(move[1]));
+                }
             }
         }
         
