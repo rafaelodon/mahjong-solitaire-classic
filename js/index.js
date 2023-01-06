@@ -41,6 +41,7 @@ window.onload = () => {
             cursorTile: undefined,
             selectedTile: undefined,
             undos: 0,
+            hints: 0,
             topBarMessage: "",
             hint: [],            
             soundOn: true,   
@@ -116,14 +117,14 @@ window.onload = () => {
             }
         }while(solvable != true);
         
-        // fast forward 70 moves (dev debug)        
-        // var moves = solver.getMoves();        
-        // for(var i=0; i<71; i++){
-        //     var move = moves.shift();
-        //     if(move){
-        //         newBoard.removeTilesIfMatch(newBoard.getTileById(move[0]),newBoard.getTileById(move[1]));
-        //     }
-        // }
+        //fast forward 70 moves (dev debug)        
+        var moves = solver.getMoves();        
+        for(var i=0; i<71; i++){
+            var move = moves.shift();
+            if(move){
+                newBoard.removeTilesIfMatch(newBoard.getTileById(move[0]),newBoard.getTileById(move[1]));
+            }
+        }
         
         gameState.board = newBoard;
         gameState.tiles = newBoard.getTilesList().sort(MahjongUtils.compareTilesByRenderOrder);
@@ -364,7 +365,8 @@ window.onload = () => {
                 tr.innerHTML = "<td>#"+(i+1)+"</td>";
                 tr.innerHTML += "<td>"+dateString+" "+hourString+"</td>";
                 tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
-                tr.innerHTML += "<td>"+stat.undos+" undo(s)</td>";
+                tr.innerHTML += "<td>"+(stat.undos ? "Undos: "+stat.undos+". " : " ")+
+                    (stat.hints ? "Hints: "+stat.hints+"." : "")+"</td>";
                 rankingTable.appendChild(tr);
             });
         }else{
@@ -420,7 +422,8 @@ window.onload = () => {
         lastWinData = {
             date: Date.now(),
             ellapsedMillliseconds: timer.getEllapsedMillliseconds(),
-            undos: gameState.undos
+            undos: gameState.undos,
+            hints: gameState.hints
         };
         stats.ranking.push(lastWinData);
         mahjongData.saveGameStats(stats);
@@ -633,6 +636,7 @@ window.onload = () => {
     btnHint.addEventListener("click", () => {                    
         gameState.hint = gameState.solver.getBestNextMove();        
         if(gameState.hint){
+            gameState.hints += 1; 
             playSoundFx("ah");
         }        
     });
