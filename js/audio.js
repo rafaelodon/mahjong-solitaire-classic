@@ -13,7 +13,11 @@ var SOUND_FX = {
     "ah" : { src: "audio/ah.wav", volume: 0.5 },
     "victory" : { src: "audio/victory.mp3", volume: 1.0 },
     "death" : { src: "audio/death.mp3", volume: 0.5 },
+    "collect" : { src: "audio/collect.wav", volume: 0.3 },
+    "boom" : { src: "audio/boom.wav", volume: 0.5 },
 }
+
+var audioContext = new AudioContext();
 
 // Load audio files
 Object.keys(SOUND_FX).forEach(function (key){
@@ -26,8 +30,28 @@ Object.keys(SOUND_FX).forEach(function (key){
             soundFx.loaded = true;
         }
     })
-    soundFx.play = () => {
+    soundFx.source = fetch(soundFx.src).then((response) => {
+        if (!response.ok) {
+            throw new Error(`HTTP error, status = ${response.status}`);
+        }
+        return response.arrayBuffer();
+    })
+    .then((buffer) => audioContext.decodeAudioData(buffer));
+
+    soundFx.play = (pitch=undefined) => {
         soundFx.audio.currentTime = 0;
-        soundFx.audio.play();
+        if(pitch){            
+            soundFx.source.then((buffer)=>{
+                const source = new AudioBufferSourceNode(audioContext);
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
+                source.gain = soundFx.volume;
+                source.detune.value = pitch;
+                source.start(0);
+            });
+        }else{
+            soundFx.audio.play();
+        }
+        
     }
 });

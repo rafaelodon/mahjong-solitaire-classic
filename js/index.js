@@ -10,9 +10,11 @@
 var MAX_Z = 5; // the number of tiles levels + 1
 var MAX_Y = 17; // twice the number of rows + 1
 var MAX_X = 30; // twice the number of cols
-
 var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
+var MAX_COMBO_TIME = 3000;
+
 var gameState = {}
+
 
 // version info from manifest
 var version = "---"
@@ -30,6 +32,8 @@ window.onload = () => {
     mahjongData = new MahjongData();
     lastGameData = {};
     lastWinData = undefined;
+    comboTimer = 0;
+    comboCount = 0;     
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -42,6 +46,7 @@ window.onload = () => {
             selectedTile: undefined,
             undos: 0,
             hints: 0,
+            combos: 0,
             topBarMessage: "",
             hint: [],            
             soundOn: true,   
@@ -203,7 +208,10 @@ window.onload = () => {
                     }
                 }
             }
-            if(positions.length > 0){
+
+            // if there are considerable free positions on the lower levels, abort
+            // fingind position on upper levels (bottom-top approach)
+            if(positions.length > 4){
                 break;
             }
         }        
@@ -277,6 +285,11 @@ window.onload = () => {
                     playSoundFx("vanish");
                     clearSelected();
                     updateMovesLeft();
+                    if(comboTimer > 0){
+                        comboCount += 1;      
+                        SOUND_FX["collect"].play(comboCount*75);                  
+                    }
+                    comboTimer = MAX_COMBO_TIME;
                                                                  
                     if(gameState.board.hasFinished()){
                         onWinGame();
@@ -368,8 +381,11 @@ window.onload = () => {
                 tr.innerHTML = "<td>#"+(i+1)+"</td>";
                 tr.innerHTML += "<td>"+dateString+" "+hourString+"</td>";
                 tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
-                tr.innerHTML += "<td>"+(stat.undos ? "Undos: "+stat.undos+". " : " ")+
-                    (stat.hints ? "Hints: "+stat.hints+"." : "")+"</td>";
+                tr.innerHTML += "<td>"+
+                    (stat.undos ? "Undos: "+stat.undos+". " : " ")+
+                    (stat.hints ? "Hints: "+stat.hints+"." : " ")+
+                    (stat.combos ? "Combos: "+stat.combos+"." : " ")+
+                    "</td>";
                 rankingTable.appendChild(tr);
             });
         }else{
@@ -426,7 +442,8 @@ window.onload = () => {
             date: Date.now(),
             ellapsedMillliseconds: timer.getEllapsedMillliseconds(),
             undos: gameState.undos,
-            hints: gameState.hints
+            hints: gameState.hints,
+            combos: gameState.combos
         };
         stats.ranking.push(lastWinData);
         mahjongData.saveGameStats(stats);
@@ -481,6 +498,19 @@ window.onload = () => {
                     tile.alpha = 0;
                 }        
             });
+        
+            // decrease combo counter
+            if(comboTimer > 0){
+                comboTimer -= Loop.ellapsedTime;
+                if(comboTimer <= 0){
+                    comboTimer = 0;
+                    gameState.combos += comboCount;
+                    if(comboCount > 1){
+                        SOUND_FX["boom"].play();
+                    }
+                    comboCount = 0;                    
+                }
+            }
         }
 
         TweenManager.update();
@@ -585,7 +615,30 @@ window.onload = () => {
                     // tile image
                     ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);
                 }
-            });
+            });  
+            
+            // combo 
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            
+            if(comboCount >= 1 && comboTimer > 0){
+
+                ctx.beginPath()
+                ctx.rect(10,10,tileWidth*2,tileHeight/3);            
+                ctx.fillStyle = "#888";
+                ctx.fill();
+            
+                var width = (tileWidth*2)*comboTimer/MAX_COMBO_TIME;                
+                ctx.beginPath()
+                ctx.rect(10+tileThickness/2,10+tileThickness/2,width,tileHeight/3-tileThickness);            
+                ctx.fillStyle = "#BDAEC6";
+                ctx.fill();
+            }
+
+            if(comboCount >= 1){
+                ctx.font = tileWidth/4+"px sans-serif";
+                ctx.fillStyle = "#000";
+                ctx.fillText(comboCount+" combo!",10+tileThickness,10+tileWidth/4)
+            }
         }
     }
 
