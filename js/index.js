@@ -11,10 +11,9 @@ var MAX_Z = 5; // the number of tiles levels + 1
 var MAX_Y = 17; // twice the number of rows + 1
 var MAX_X = 30; // twice the number of cols
 var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
-var MAX_COMBO_TIME = 3000;
+var MAX_COMBO_TIME = 3500;
 
 var gameState = {}
-
 
 // version info from manifest
 var version = "---"
@@ -23,6 +22,20 @@ fetch('manifest.json').then((response) => {
         document.getElementById("version").innerText = "v"+manifest.version;
     });
 })
+
+// round rect
+CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+}
 
 window.onload = () => {
 
@@ -297,17 +310,10 @@ window.onload = () => {
                 gameState.cursorTile,
                 () => {
                     // success
-                    //playSoundFx("vanish");
+                    playSoundFx("vanish");
                     clearSelected();
                     updateMovesLeft();                                        
-                    if(comboTimer > 0){
-                        comboCount += 1;
-                        gameState.combos += 1;
-                        SOUND_FX["piano"].play((comboCount+1)*75);
-                    }else{
-                        SOUND_FX["click"].play();
-                    }
-                    comboTimer = MAX_COMBO_TIME;
+                    updateCombo();
                                                                  
                     if(gameState.board.hasFinished()){
                         onWinGame();
@@ -318,7 +324,7 @@ window.onload = () => {
                 () => {
                     // if no removal happend, selects the cursor tile                    
                     if(gameState.selectedTile != gameState.cursorTile){
-                        playSoundFx("blub");
+                        playSoundFx("wood");
                         clearSelected();
                         gameState.selectedTile = gameState.cursorTile;
                     }
@@ -333,6 +339,19 @@ window.onload = () => {
     function updateMovesLeft(){
         gameState.movesAvailable = gameState.solver.countMovestLeft();
         gameState.topBarMessage = "Free tiles: "+gameState.movesAvailable;    
+    }
+
+    function updateCombo(){        
+        if(comboTimer > 0){            
+            comboCount += 1;                        
+            gameState.combos += 1;                        
+            document.getElementById("combo").className = "animatedVisible";
+            setTimeout(function (){
+                SOUND_FX["piano"].play((comboCount+1)*75);                            
+                document.getElementById("combo").classList.add("animatedZoomInOut");                
+            },500);
+        }
+        comboTimer = MAX_COMBO_TIME;
     }
 
     function onWinGame(){        
@@ -400,9 +419,9 @@ window.onload = () => {
                 tr.innerHTML += "<td>"+dateString+" "+hourString+"</td>";
                 tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
                 tr.innerHTML += "<td style='font-size: 0.7em'>"+
-                    (stat.undos ? "Undos: "+stat.undos+"; " : " ")+
-                    (stat.hints ? "Hints: "+stat.hints+"; " : " ")+
-                    (stat.combos ? "Combos: "+stat.combos+";" : " ")+
+                    (stat.undos ? stat.undos+" undo. " : " ")+
+                    (stat.hints ? stat.hints+" hint. " : " ")+
+                    (stat.combos ? stat.combos+" combo.;" : " ")+
                     "</td>";
                 rankingTable.appendChild(tr);
             });
@@ -501,7 +520,7 @@ window.onload = () => {
         gameState.ratio = canvas.height / canvas.width;
         gameState.tileWidth = canvas.width / MAX_X * 1.8;
         gameState.tileHeight = gameState.tileWidth * gameState.ratio * 1.8;
-        gameState.tileThickness = gameState.tileWidth / 8 * gameState.ratio;    
+        gameState.tileThickness = gameState.tileWidth / 7 * gameState.ratio;    
     }
 
     function update() {
@@ -525,9 +544,10 @@ window.onload = () => {
                     if(comboCount >= 1){
                         SOUND_FX["boom"].play();
                     }
-                    comboCount = 0;                    
+                    comboCount = 0; 
+                    document.getElementById("combo").className = "animatedHidden";                   
                 }
-            }
+            }            
         }
 
         TweenManager.update();
@@ -567,82 +587,92 @@ window.onload = () => {
             var tileThickness = gameState.tileThickness;
             gameState.tiles.forEach((tile) => {                        
                 if (tile.alpha > 0) {
-
-                    ctx.setTransform(1, 0, 0, 1, 0, 0);            
+                    
                     ctx.globalAlpha = tile.alpha;                    
                 
                     // translate to the tile position
                     var pZ = (tile.z + 1) * tileThickness;
                     var pX = tile.x * tileWidth / 2 + pZ;
                     var pY = tile.y * tileHeight / 2 + pZ;
-                    ctx.translate(pX, pY);
+                    ctx.setTransform(1, 0, 0, 1, pX, pY);                    
 
                     ctx.lineWidth = 0.1;
+
+                    // base color                    
+                    var baseColor = "#e8e6dc";
+                    if (tile == gameState.selectedTile) {
+                        baseColor = "#7ABA7A";
+                    } else if (tile == gameState.cursorTile) {
+                        baseColor = "#FFF";
+                    } else if (gameState.hint && gameState.hint.includes(tile)) {
+                        baseColor = "#FFCF79";
+                    }
                     
                     // shadow
-                    var shadowColor = "rgb(100,100,100,1)";
-                    ctx.fillStyle = shadowColor;
-                    ctx.shadowBlur = tileThickness * 2;
+                    var shadowColor = "#000";                    
+                    ctx.shadowBlur = tileThickness;
                     ctx.shadowColor = shadowColor;
                     ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;
-                    ctx.fillRect(0, 0, tileWidth, tileHeight);
+                    ctx.shadowOffsetY = 0;                    
+                    ctx.roundRect(0, 0, tileWidth, tileHeight, tileThickness);                                        
+                    ctx.fillStyle = baseColor;
+                    ctx.fill();
                     ctx.shadowBlur = 0;
 
-                    // upper side
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(tileWidth, 0);
-                    ctx.lineTo(tileWidth + tileThickness, tileThickness);
-                    ctx.lineTo(tileThickness, tileThickness);
-                    ctx.lineTo(0, 0);
-                    var gray = 150 + (tile.z * 5);
-                    ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
-                    ctx.fill();
-                    ctx.stroke();
+                    var skew = 0.8;
 
-                    // left side
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(tileThickness, tileThickness);
-                    ctx.lineTo(tileThickness, tileHeight + tileThickness);
-                    ctx.lineTo(0, tileHeight);
-                    ctx.lineTo(0, 0);
-                    var gray = 100 + (tile.z * 5);
-                    ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
+                    //side
+                    ctx.setTransform(1, skew, 0, 1, pX, pY);
+                    ctx.beginPath();                    
+                    ctx.roundRect(0, 0, tileThickness*1.5, tileHeight, tileThickness);                    
+                    ctx.fillStyle = ColorTools.changeColorShade(-1.5,baseColor);
                     ctx.fill();
-                    ctx.stroke();
 
-                    // top
+                    //top
+                    ctx.setTransform(1, 0, skew, 1, pX, pY);
+                    ctx.beginPath();                    
+                    ctx.roundRect(0, 0, tileWidth, tileThickness*1.5, tileThickness);                    
+                    ctx.fillStyle = ColorTools.changeColorShade(-1.0,baseColor);
+                    ctx.fill();                                      
+
+                    //front
+                    ctx.setTransform(1, 0, 0, 1, pX, pY);
                     ctx.beginPath();
-                    ctx.rect(tileThickness, tileThickness, tileWidth, tileHeight);
-                    var gray = 255 - (35 / (tile.z + 1)); // diferent shades for every stack level
-                    if (tile == gameState.selectedTile) {
-                        ctx.fillStyle = "#7ABA7A";
-                    } else if (tile == gameState.cursorTile) {
-                        ctx.fillStyle = "#BDAEC6";
-                    } else if (gameState.hint && gameState.hint.includes(tile)) {
-                        ctx.fillStyle = "#FFCF79";
-                    }else {
-                        ctx.fillStyle = "rgb(" + gray + "," + gray + "," + gray + ",1)";
-                    }
+                    ctx.roundRect(tileThickness, tileThickness, tileWidth, tileHeight, tileThickness);
+                    ctx.fillStyle = baseColor;
                     ctx.fill();
                     ctx.stroke();
                     
                     // tile image
                     ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);
+
+                    // light reflex on top corner
+                    ctx.beginPath();                    
+                    ctx.roundRect(tileThickness*1.5, tileThickness*1.2, tileWidth*0.95, tileThickness/4, tileThickness/4);                    
+                    ctx.fillStyle = ColorTools.changeColorShade(0.5,baseColor);
+                    ctx.fill();
+
+                    // light reflex on left corner
+                    ctx.setTransform(1, 0, 0, 1, pX, pY);
+                    ctx.beginPath();                    
+                    ctx.roundRect(tileThickness*1.2, tileThickness*1.5, tileThickness/4, tileHeight*0.90, tileThickness/4);                    
+                    ctx.fillStyle = ColorTools.changeColorShade(0.5,baseColor);
+                    ctx.fill();
+
+                    // dark edge bottom
+                    ctx.beginPath(); 
+                    ctx.roundRect(tileThickness*1.5, tileHeight+tileThickness*0.75, tileWidth*0.92, tileThickness/6, tileThickness/5);                                                          
+                    ctx.fillStyle = ColorTools.changeColorShade(-1,baseColor);
+                    ctx.fill();
+
+                    
                 }
             });  
             
-            // combo 
-            if(comboCount >= 1 && comboTimer > 0){            
-                var width = Math.round(comboTimer/MAX_COMBO_TIME*100);
-                document.getElementById("comboBar").style.width = width+"%";
-                document.getElementById("comboText").innerText = comboCount+" combo!";
-                document.getElementById("combo").className = "animatedVisible";
-            }else{
-                document.getElementById("combo").className = "animatedHidden";
-            }            
+            // combo             
+            var width = Math.round(comboTimer/MAX_COMBO_TIME*100);
+            document.getElementById("comboBar").style.width = width+"%";
+            document.getElementById("comboText").innerText = comboCount > 0 ? "Combo +"+comboCount : "";                                         
         }
     }
 

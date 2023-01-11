@@ -16,6 +16,7 @@ var SOUND_FX = {
     "death" : { src: "audio/death.mp3", volume: 0.5 },
     "piano" : { src: "audio/piano.wav", volume: 0.4 },
     "boom" : { src: "audio/boom.wav", volume: 0.7 },
+    "wood" : { src: "audio/wood.wav", volume: 0.5 },
 }
 
 var audioContext = new AudioContext();

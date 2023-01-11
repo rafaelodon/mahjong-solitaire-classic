@@ -1,5 +1,5 @@
 {
-  "version": "1.6.2",
+  "version": "1.7.0",
   "author": "Rafael Odon de Alencar",
   "developer": {
     "name": "Rafael Odon de Alencar",
@@ -26,7 +26,7 @@
       "purpose": "any"
     }
   ],
-  "description": "Mahjong Solitaire Classic is a worldwide single-player chinese puzzle where 144 tiles are shuffled and stacked in a classic disposition. To remove all the pieces and win, you'll need to find pairs of maching unblocked tiles. You've got to be smart enough to anticipate and organize your moves, or else the board get stuck!",
+  "description": "Mahjong Solitaire Classic is a worldwide single-player chinese puzzle where 144 tiles are shuffled and stacked in a classic disposition. To remove all the pieces and win, you'll need to find pairs of matching unblocked tiles. You've got to be smart enough to anticipate and organize your moves, or else you'll get stuck!",
   "dir": "ltr",
   "lang": "en",
   "categories": [
