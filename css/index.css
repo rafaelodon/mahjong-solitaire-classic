@@ -20,6 +20,17 @@ canvas{
     margin-top: 2em;
 }
 
+#version {
+    position: fixed;
+    font-family: sans-serif;
+    color: #FFF;
+    font-size: 0.8em;
+    width: 2em;
+    bottom: 0em;
+    right: 1em;
+    height: 1.2em;
+}
+
 /* TOPBAR */
 #topbar{
     position: absolute;
@@ -30,7 +41,7 @@ canvas{
     background: #576E62;  
     font-family: sans-serif;
     font-weight: bold;                
-    font-size: 1.2em;                 
+    font-size: 1.1em;                 
     box-shadow: 0vh 0vh 0.5vh rgba(0, 0, 0, 0.35);
     color: #FFF;
 }
@@ -42,16 +53,9 @@ canvas{
     margin-left: 0.5em; 
 }
 
-#version{
-    float:right;
-    font-weight: lighter;
-    font-size: 0.5em;
-    width: 1em;
-}
-
 #time {
     float: right;
-    width: 6em;    
+    width: 5em;    
     text-align: right;
     margin-right: 0.5em; 
 }
@@ -164,4 +168,34 @@ canvas{
 
 .hidden{
     display: none;
+}
+
+/* COMBO */
+#combo{
+    position: fixed;
+    top: 10vh;
+    right: 0.5em;    
+    width: 7em;
+    height: 1.7em;
+    background: #576E62;
+    border-radius: 0.5em;
+    box-shadow: -0.1em -0.1em 0.2em rgba(0, 0, 0, 0.25);    
+    padding: 0.2em;
+}
+
+#comboBar{
+    width: 100%;
+    height: 100%;        
+    background: crimson;
+    border-radius: 0.5em;
+}
+
+#comboText{
+    color: #FFF;
+    font-family: sans-serif;
+    font-weight: bold;
+    width: 100%;
+    margin-top: -1.3em;
+    text-align: center;
+    text-transform: uppercase;
 }

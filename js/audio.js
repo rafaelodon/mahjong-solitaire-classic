@@ -9,12 +9,13 @@
 var SOUND_FX = {
     "vanish" : { src: "audio/vanish.wav", volume: 0.5 },
     "click" : { src: "audio/click.wav", volume: 0.5 },
+    "blub" : { src: "audio/blub.wav", volume: 0.5 },
     "horn" : { src: "audio/horn.wav", volume: 0.5 },
     "ah" : { src: "audio/ah.wav", volume: 0.5 },
     "victory" : { src: "audio/victory.mp3", volume: 1.0 },
     "death" : { src: "audio/death.mp3", volume: 0.5 },
-    "collect" : { src: "audio/collect.wav", volume: 0.3 },
-    "boom" : { src: "audio/boom.wav", volume: 0.5 },
+    "piano" : { src: "audio/piano.wav", volume: 0.4 },
+    "boom" : { src: "audio/boom.wav", volume: 0.7 },
 }
 
 var audioContext = new AudioContext();
@@ -30,28 +31,36 @@ Object.keys(SOUND_FX).forEach(function (key){
             soundFx.loaded = true;
         }
     })
-    soundFx.source = fetch(soundFx.src).then((response) => {
-        if (!response.ok) {
-            throw new Error(`HTTP error, status = ${response.status}`);
-        }
-        return response.arrayBuffer();
-    })
-    .then((buffer) => audioContext.decodeAudioData(buffer));
-
+    
+    loadBuffer(soundFx);
+    
     soundFx.play = (pitch=undefined) => {
         soundFx.audio.currentTime = 0;
-        if(pitch){            
-            soundFx.source.then((buffer)=>{
-                const source = new AudioBufferSourceNode(audioContext);
-                source.buffer = buffer;
-                source.connect(audioContext.destination);
-                source.gain = soundFx.volume;
-                source.detune.value = pitch;
-                source.start(0);
-            });
+        if(pitch){                        
+            var source = new AudioBufferSourceNode(audioContext);
+            source.buffer = soundFx.buffer;
+            source.detune.value = pitch;
+
+            var gainNode = new GainNode(audioContext);
+            gainNode.gain.value = soundFx.volume;
+            
+            source.connect(gainNode).connect(audioContext.destination);
+                        
+            source.start(0);            
         }else{
             soundFx.audio.play();
         }
         
     }
 });
+
+function loadBuffer(soundFx) {
+    fetch(soundFx.src)
+        .then((response) => response.arrayBuffer())
+        .then((buffer) => audioContext.decodeAudioData(buffer))
+        .then((audioData) => {
+            console.log(audioData);
+            soundFx.buffer = audioData;
+            console.log(soundFx.buffer);
+        });        
+}

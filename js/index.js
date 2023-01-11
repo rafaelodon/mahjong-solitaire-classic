@@ -11,7 +11,7 @@ var MAX_Z = 5; // the number of tiles levels + 1
 var MAX_Y = 17; // twice the number of rows + 1
 var MAX_X = 30; // twice the number of cols
 var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
-var MAX_COMBO_TIME = 3000;
+var MAX_COMBO_TIME = 2000;
 
 var gameState = {}
 
@@ -140,7 +140,7 @@ window.onload = () => {
         updateMovesLeft();
         timer.stop();      
         gameState.isRunning = true;
-        lastWinData = undefined;        
+        lastWinData = undefined;
     }
 
     /**
@@ -193,24 +193,39 @@ window.onload = () => {
         var positions = [];
         for (var z = 0; z < board.length; z++) {            
             for (var y = 0; y < board[z].length; y++) {
-                for (var x = 0; x < board[z][y].length; x++) {                                          
+                for (var x = 0; x < board[z][y].length; x++) {             
+                    // the position is free                             
                     var isFree = board[z][y][x] === null;                    
+
+                    // is in the first level or on top of another piece
                     var isGrounded = z == 0 || (z > 0 && board[z-1][y][x]);                    
-                    var rowLength = board[z][y].filter((e)=>e).length;                    
+                    
+                    // is the first tile on a empty row, or is beside another tile
+                    var rowLength = board[z][y].filter((e)=>e).length;                                        
                     var hasNeighbour = (x>0 && board[z][y][x-1]) || (x < MAX_X-3 && board[z][y][x+2]);
                     var firstOrBeside = rowLength == 0 || hasNeighbour;
+
+                    // is blocking a tile beside
                     var blocksPairBeside = pair && rowLength > 1 && (z == pair.z && y == pair.y && (x == pair.x+2 || x == pair.x-2));
+
+                    // is blocking a tile below
                     var blocksPairBelow = pair && (x == pair.x && y == pair.y && z == pair.z+1);                    
+
+                    // is one of the offset tiles in the central row
                     var isOffsetFree = (z==4) || (y % 2 != 0) || (y % 2 == 0 && (hasNeighbour));
                     
+                    /**
+                     * The basic requirement is: the position must be free and grounded.
+                     * If it is not the last tile, optimze by checking the other requirements.
+                     */
                     if(isFree && isGrounded && (last || (isOffsetFree && firstOrBeside && !blocksPairBelow && !blocksPairBeside))){                                        
                         positions.push({x:x, y:y, z:z});
                     }
                 }
             }
 
-            // if there are considerable free positions on the lower levels, abort
-            // fingind position on upper levels (bottom-top approach)
+            // if there are considerable free positions on the current levels, abort
+            // looking for more position on the upper levels (bottom-top approach)
             if(positions.length > 4){
                 break;
             }
@@ -282,12 +297,15 @@ window.onload = () => {
                 gameState.cursorTile,
                 () => {
                     // success
-                    playSoundFx("vanish");
+                    //playSoundFx("vanish");
                     clearSelected();
-                    updateMovesLeft();
+                    updateMovesLeft();                                        
                     if(comboTimer > 0){
-                        comboCount += 1;      
-                        SOUND_FX["collect"].play(comboCount*75);                  
+                        comboCount += 1;
+                        gameState.combos += 1;
+                        SOUND_FX["piano"].play((comboCount+1)*75);
+                    }else{
+                        SOUND_FX["click"].play();
                     }
                     comboTimer = MAX_COMBO_TIME;
                                                                  
@@ -300,7 +318,7 @@ window.onload = () => {
                 () => {
                     // if no removal happend, selects the cursor tile                    
                     if(gameState.selectedTile != gameState.cursorTile){
-                        playSoundFx("click");
+                        playSoundFx("blub");
                         clearSelected();
                         gameState.selectedTile = gameState.cursorTile;
                     }
@@ -381,10 +399,10 @@ window.onload = () => {
                 tr.innerHTML = "<td>#"+(i+1)+"</td>";
                 tr.innerHTML += "<td>"+dateString+" "+hourString+"</td>";
                 tr.innerHTML += "<td>"+stat.ellapsedMillliseconds/1000+" s</td>";
-                tr.innerHTML += "<td>"+
-                    (stat.undos ? "Undos: "+stat.undos+". " : " ")+
-                    (stat.hints ? "Hints: "+stat.hints+"." : " ")+
-                    (stat.combos ? "Combos: "+stat.combos+"." : " ")+
+                tr.innerHTML += "<td style='font-size: 0.7em'>"+
+                    (stat.undos ? "Undos: "+stat.undos+"; " : " ")+
+                    (stat.hints ? "Hints: "+stat.hints+"; " : " ")+
+                    (stat.combos ? "Combos: "+stat.combos+";" : " ")+
                     "</td>";
                 rankingTable.appendChild(tr);
             });
@@ -486,7 +504,7 @@ window.onload = () => {
         gameState.tileThickness = gameState.tileWidth / 8 * gameState.ratio;    
     }
 
-    function update() {        
+    function update() {
         if(gameState && gameState.isRunning){
 
             updateCursorTile();           
@@ -503,8 +521,7 @@ window.onload = () => {
             if(comboTimer > 0){
                 comboTimer -= Loop.ellapsedTime;
                 if(comboTimer <= 0){
-                    comboTimer = 0;
-                    gameState.combos += comboCount;
+                    comboTimer = 0;                    
                     if(comboCount > 1){
                         SOUND_FX["boom"].play();
                     }
@@ -618,27 +635,14 @@ window.onload = () => {
             });  
             
             // combo 
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            
-            if(comboCount >= 1 && comboTimer > 0){
-
-                ctx.beginPath()
-                ctx.rect(10,10,tileWidth*2,tileHeight/3);            
-                ctx.fillStyle = "#888";
-                ctx.fill();
-            
-                var width = (tileWidth*2)*comboTimer/MAX_COMBO_TIME;                
-                ctx.beginPath()
-                ctx.rect(10+tileThickness/2,10+tileThickness/2,width,tileHeight/3-tileThickness);            
-                ctx.fillStyle = "#BDAEC6";
-                ctx.fill();
-            }
-
-            if(comboCount >= 1){
-                ctx.font = tileWidth/4+"px sans-serif";
-                ctx.fillStyle = "#000";
-                ctx.fillText(comboCount+" combo!",10+tileThickness,10+tileWidth/4)
-            }
+            if(comboCount >= 1 && comboTimer > 0){            
+                var width = Math.round(comboTimer/MAX_COMBO_TIME*100);
+                document.getElementById("comboBar").style.width = width+"%";
+                document.getElementById("comboText").innerText = comboCount+" combo!";
+                document.getElementById("combo").className = "animatedVisible";
+            }else{
+                document.getElementById("combo").className = "animatedHidden";
+            }            
         }
     }
 
@@ -671,8 +675,9 @@ window.onload = () => {
             headerContent: "New Game",
             bodyContent: "Restart the game and shuffe the tiles?",
             okCallback: (modal) => {                
+                playSoundFx("click");
                 modal.hide(); 
-                startNewGame();
+                startNewGame();                
             }
         });
     });
@@ -708,7 +713,8 @@ window.onload = () => {
 
     var btnRanking = document.getElementById("btnRanking");
     btnRanking.addEventListener("click", () => {                                    
-        showRanking();       
+        showRanking();
+        playSoundFx("click");               
     });
 
     document.addEventListener("visibilitychange", () => {
