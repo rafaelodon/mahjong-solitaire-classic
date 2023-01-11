@@ -522,7 +522,7 @@ window.onload = () => {
                 comboTimer -= 1000 / Loop.fps;
                 if(comboTimer <= 0){
                     comboTimer = 0;                    
-                    if(comboCount > 1){
+                    if(comboCount >= 1){
                         SOUND_FX["boom"].play();
                     }
                     comboCount = 0;                    
