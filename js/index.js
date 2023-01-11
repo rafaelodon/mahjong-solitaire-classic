@@ -11,7 +11,7 @@ var MAX_Z = 5; // the number of tiles levels + 1
 var MAX_Y = 17; // twice the number of rows + 1
 var MAX_X = 30; // twice the number of cols
 var PIXEL_RATIO = Math.ceil(window.devicePixelRatio);
-var MAX_COMBO_TIME = 2000;
+var MAX_COMBO_TIME = 3000;
 
 var gameState = {}
 
@@ -519,7 +519,7 @@ window.onload = () => {
         
             // decrease combo counter
             if(comboTimer > 0){
-                comboTimer -= Loop.ellapsedTime;
+                comboTimer -= 1000 / Loop.fps;
                 if(comboTimer <= 0){
                     comboTimer = 0;                    
                     if(comboCount > 1){
