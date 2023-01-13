@@ -39,14 +39,15 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
 window.onload = () => {
 
-    gameState = {};
-    modal = new Modal();
-    timer = new Timer();
-    mahjongData = new MahjongData();
-    lastGameData = {};
-    lastWinData = undefined;
-    comboTimer = 0;
-    comboCount = 0;     
+    var gameState = {};
+    var modal = new Modal();
+    var timer = new Timer();
+    var mahjongData = new MahjongData();
+    var lastGameData = {};
+    var lastWinData = undefined;
+    var comboTimer = 0;
+    var comboCount = 0;     
+    var preRenderedTiles = {};    
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -493,7 +494,7 @@ window.onload = () => {
     }
 
     function onResize() {
-        calculateDimensions();
+        calculateDimensions();        
         draw();
     }
 
@@ -520,7 +521,23 @@ window.onload = () => {
         gameState.ratio = canvas.height / canvas.width;
         gameState.tileWidth = canvas.width / MAX_X * 1.8;
         gameState.tileHeight = gameState.tileWidth * gameState.ratio * 1.8;
-        gameState.tileThickness = gameState.tileWidth / 7 * gameState.ratio;    
+        gameState.tileThickness = gameState.tileWidth / 6 * gameState.ratio;    
+
+        preRenderTiles();
+    }
+
+    function preRenderTiles(){
+        preRenderedTiles["default"] = renderEmptyTile("#e8e6dc", gameState.tileWidth, 
+            gameState.tileHeight, gameState.tileThickness);
+        
+        preRenderedTiles["selected"] = renderEmptyTile("#7ABA7A", gameState.tileWidth, 
+            gameState.tileHeight, gameState.tileThickness);
+        
+        preRenderedTiles["hover"] = renderEmptyTile("#F5F5F5", gameState.tileWidth, 
+            gameState.tileHeight, gameState.tileThickness);
+
+        preRenderedTiles["hint"] = renderEmptyTile("#FFCF79", gameState.tileWidth, 
+            gameState.tileHeight, gameState.tileThickness);
     }
 
     function update() {
@@ -570,7 +587,7 @@ window.onload = () => {
 
         if(gameState && gameState.isRunning){
 
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.resetTransform();
             ctx.globalAlpha = 1.0;
             ctx.clearRect(0, 0, canvas.width, canvas.height);            
 
@@ -587,85 +604,27 @@ window.onload = () => {
             var tileThickness = gameState.tileThickness;
             gameState.tiles.forEach((tile) => {                        
                 if (tile.alpha > 0) {
-                    
+
                     ctx.globalAlpha = tile.alpha;                    
                 
                     // translate to the tile position
                     var pZ = (tile.z + 1) * tileThickness;
                     var pX = tile.x * tileWidth / 2 + pZ;
                     var pY = tile.y * tileHeight / 2 + pZ;
-                    ctx.setTransform(1, 0, 0, 1, pX, pY);                    
-
-                    ctx.lineWidth = 0.1;
-
-                    // base color                    
-                    var baseColor = "#e8e6dc";
-                    if (tile == gameState.selectedTile) {
-                        baseColor = "#7ABA7A";
-                    } else if (tile == gameState.cursorTile) {
-                        baseColor = "#FFF";
-                    } else if (gameState.hint && gameState.hint.includes(tile)) {
-                        baseColor = "#FFCF79";
-                    }
                     
-                    // shadow
-                    var shadowColor = "#000";                    
-                    ctx.shadowBlur = tileThickness;
-                    ctx.shadowColor = shadowColor;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;                    
-                    ctx.roundRect(0, 0, tileWidth, tileHeight, tileThickness);                                        
-                    ctx.fillStyle = baseColor;
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-
-                    var skew = 0.8;
-
-                    //side
-                    ctx.setTransform(1, skew, 0, 1, pX, pY);
-                    ctx.beginPath();                    
-                    ctx.roundRect(0, 0, tileThickness*1.5, tileHeight, tileThickness);                    
-                    ctx.fillStyle = ColorTools.changeColorShade(-1.5,baseColor);
-                    ctx.fill();
-
-                    //top
-                    ctx.setTransform(1, 0, skew, 1, pX, pY);
-                    ctx.beginPath();                    
-                    ctx.roundRect(0, 0, tileWidth, tileThickness*1.5, tileThickness);                    
-                    ctx.fillStyle = ColorTools.changeColorShade(-1.0,baseColor);
-                    ctx.fill();                                      
-
-                    //front
-                    ctx.setTransform(1, 0, 0, 1, pX, pY);
-                    ctx.beginPath();
-                    ctx.roundRect(tileThickness, tileThickness, tileWidth, tileHeight, tileThickness);
-                    ctx.fillStyle = baseColor;
-                    ctx.fill();
-                    ctx.stroke();
+                    var preRenderedTile = preRenderedTiles["default"];
+                    if (tile == gameState.selectedTile) {
+                        preRenderedTile = preRenderedTiles["selected"];
+                    } else if (tile == gameState.cursorTile) {
+                        preRenderedTile = preRenderedTiles["hover"];                        
+                    } else if (gameState.hint && gameState.hint.includes(tile)) {
+                        preRenderedTile = preRenderedTiles["hint"];                        
+                    }
+                                            
+                    ctx.drawImage(preRenderedTile, pX-tileWidth/2, pY-tileHeight/2);
                     
                     // tile image
-                    ctx.drawImage(TILES_TYPES[tile.tileType].image, tileWidth/4, tileHeight/4, tileWidth/1.5, tileHeight/1.5);
-
-                    // light reflex on top corner
-                    ctx.beginPath();                    
-                    ctx.roundRect(tileThickness*1.5, tileThickness*1.2, tileWidth*0.95, tileThickness/4, tileThickness/4);                    
-                    ctx.fillStyle = ColorTools.changeColorShade(0.5,baseColor);
-                    ctx.fill();
-
-                    // light reflex on left corner
-                    ctx.setTransform(1, 0, 0, 1, pX, pY);
-                    ctx.beginPath();                    
-                    ctx.roundRect(tileThickness*1.2, tileThickness*1.5, tileThickness/4, tileHeight*0.90, tileThickness/4);                    
-                    ctx.fillStyle = ColorTools.changeColorShade(0.5,baseColor);
-                    ctx.fill();
-
-                    // dark edge bottom
-                    ctx.beginPath(); 
-                    ctx.roundRect(tileThickness*1.5, tileHeight+tileThickness*0.75, tileWidth*0.92, tileThickness/6, tileThickness/5);                                                          
-                    ctx.fillStyle = ColorTools.changeColorShade(-1,baseColor);
-                    ctx.fill();
-
-                    
+                    ctx.drawImage(TILES_TYPES[tile.tileType].image, pX + tileWidth/4, pY + tileHeight/4, tileWidth/1.5, tileHeight/1.5);
                 }
             });  
             
@@ -691,7 +650,7 @@ window.onload = () => {
     canvas.addEventListener("mouseout", onMouseOut);
     canvas.addEventListener("touchstart", onMouseDown);    
     window.addEventListener("resize", onResize);
-    calculateDimensions();    
+    calculateDimensions();
 
     // 2d context
     var ctx = canvas.getContext("2d");
@@ -819,6 +778,8 @@ window.onload = () => {
                 modal.show({
                     headerContent: "Resume",
                     bodyContent: "Do you want to resume the last game?",
+                    okButtonText: "Yes",
+                    cancelButtonText: "No",
                     okCallback: (modal) => {                                    
                         resumeLastGame();
                         modal.hide();

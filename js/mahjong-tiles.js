@@ -93,3 +93,75 @@ function generateTilesMap() {
 
     return tiles;
 }
+
+/** 
+ * @returns {HTMLCanvasElement} canvas 
+ */
+function renderEmptyTile(baseColor, tileWidth, tileHeight, tileThickness){
+
+    var tileCanvas = document.createElement("canvas");    
+    tileCanvas.width = tileWidth*2;
+    tileCanvas.height = tileHeight*2;
+    ctx = tileCanvas.getContext("2d");
+    ctx.lineWidth = 0.1;
+
+    ctx.translate(tileWidth/2, tileHeight/2);
+
+    // shadow
+    var shadowColor = "#000";                    
+    ctx.shadowBlur = tileThickness*1.5;
+    ctx.shadowColor = shadowColor;
+    ctx.shadowOffsetX = tileThickness/4;
+    ctx.shadowOffsetY = tileThickness/4;                    
+    ctx.roundRect(0, 0, tileWidth, tileHeight, tileThickness);                                        
+    ctx.fillStyle = baseColor;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;                    
+
+    var skew = 35;
+
+    //side
+    ctx.setTransform(ctx.getTransform().skewYSelf(skew));    
+    ctx.beginPath();                    
+    ctx.roundRect(0, 0, tileThickness*1.5, tileHeight, tileThickness/2);                    
+    ctx.fillStyle = ColorTools.changeColorShade(-1.5,baseColor);
+    ctx.fill();
+    ctx.setTransform(ctx.getTransform().skewYSelf(-skew));
+
+    //top    
+    ctx.setTransform(ctx.getTransform().skewXSelf(skew));    
+    ctx.beginPath();                    
+    ctx.roundRect(0, 0, tileWidth, tileThickness*1.5, tileThickness/2);                    
+    ctx.fillStyle = ColorTools.changeColorShade(-1.0,baseColor);
+    ctx.fill();                                      
+    ctx.setTransform(ctx.getTransform().skewXSelf(-skew));     
+
+    //front    
+    ctx.beginPath();
+    ctx.roundRect(tileThickness, tileThickness, tileWidth, tileHeight, tileThickness);
+    ctx.fillStyle = baseColor;
+    ctx.fill();
+    ctx.stroke();
+
+    // light reflex on top corner
+    ctx.beginPath();                    
+    ctx.roundRect(tileThickness*1.5, tileThickness*1.2, tileWidth*0.92, tileThickness/4, tileThickness/4);                    
+    ctx.fillStyle = ColorTools.changeColorShade(0.5,baseColor);
+    ctx.fill();
+
+    // light reflex on left corner    
+    ctx.beginPath();                    
+    ctx.roundRect(tileThickness*1.2, tileThickness*1.5, tileThickness/4, tileHeight*0.90, tileThickness/4);                    
+    ctx.fillStyle = ColorTools.changeColorShade(0.5,baseColor);
+    ctx.fill();
+
+    // dark edge bottom
+    ctx.beginPath(); 
+    ctx.roundRect(tileThickness*1.5, tileHeight+tileThickness*0.75, tileWidth*0.92, tileThickness/6, tileThickness/5);                                                          
+    ctx.fillStyle = ColorTools.changeColorShade(-1,baseColor);
+    ctx.fill();
+
+    return tileCanvas;
+}
