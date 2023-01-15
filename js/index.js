@@ -48,6 +48,8 @@ window.onload = () => {
     var comboTimer = 0;
     var comboCount = 0;     
     var preRenderedTiles = {};    
+    var preRenderCanvas = document.createElement("canvas");
+    var preRenderContext = preRenderCanvas.getContext("2d");
 
     function clearGameState(){
         Object.assign(gameState, {            
@@ -422,7 +424,7 @@ window.onload = () => {
                 tr.innerHTML += "<td style='font-size: 0.7em'>"+
                     (stat.undos ? stat.undos+" undo. " : " ")+
                     (stat.hints ? stat.hints+" hint. " : " ")+
-                    (stat.combos ? stat.combos+" combo.;" : " ")+
+                    (stat.combos ? stat.combos+" combo." : " ")+
                     "</td>";
                 rankingTable.appendChild(tr);
             });
@@ -524,6 +526,9 @@ window.onload = () => {
         gameState.tileThickness = gameState.tileWidth / 6 * gameState.ratio;    
 
         preRenderTiles();
+
+        preRenderCanvas.width = canvas.width;
+        preRenderCanvas.height = canvas.height;
     }
 
     function preRenderTiles(){
@@ -583,20 +588,14 @@ window.onload = () => {
         }).start());   
     }
 
-    function draw() {    
-
+    function draw() {
+        
         if(gameState && gameState.isRunning){
 
-            ctx.resetTransform();
-            ctx.globalAlpha = 1.0;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);            
-
-            // ellapsed time        
-            var secs = Math.round(timer.getEllapsedMillliseconds()/1000);
-            document.getElementById("time").innerText = "🕑 "+secs+" s";        
-
-            // moves left / congrats / gameover
-            document.getElementById("moves").innerText = gameState.topBarMessage;
+            // uses a hidden canvas as a double buffer
+            preRenderContext.resetTransform();
+            preRenderContext.globalAlpha = 1.0;
+            preRenderContext.clearRect(0, 0, canvas.width, canvas.height);            
             
             // tiles
             var tileWidth = gameState.tileWidth;
@@ -605,7 +604,7 @@ window.onload = () => {
             gameState.tiles.forEach((tile) => {                        
                 if (tile.alpha > 0) {
 
-                    ctx.globalAlpha = tile.alpha;                    
+                    preRenderContext.globalAlpha = tile.alpha;                    
                 
                     // translate to the tile position
                     var pZ = (tile.z + 1) * tileThickness;
@@ -621,12 +620,23 @@ window.onload = () => {
                         preRenderedTile = preRenderedTiles["hint"];                        
                     }
                                             
-                    ctx.drawImage(preRenderedTile, pX-tileWidth/2, pY-tileHeight/2);
+                    preRenderContext.drawImage(preRenderedTile, pX-tileWidth/2, pY-tileHeight/2);
                     
                     // tile image
-                    ctx.drawImage(TILES_TYPES[tile.tileType].image, pX + tileWidth/4, pY + tileHeight/4, tileWidth/1.5, tileHeight/1.5);
+                    preRenderContext.drawImage(TILES_TYPES[tile.tileType].image, pX + tileWidth/4, pY + tileHeight/4, tileWidth/1.5, tileHeight/1.5);
                 }
-            });  
+            });
+            
+            // draw final result from hidden canvas on the visible context (double buffer)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(preRenderCanvas, 0, 0, preRenderCanvas.width, preRenderCanvas.height);
+
+            // ellapsed time        
+            var secs = Math.round(timer.getEllapsedMillliseconds()/1000);
+            document.getElementById("time").innerText = "🕑 "+secs+" s";        
+
+            // moves left / congrats / gameover
+            document.getElementById("moves").innerText = gameState.topBarMessage;
             
             // combo             
             var width = Math.round(comboTimer/MAX_COMBO_TIME*100);
@@ -653,7 +663,7 @@ window.onload = () => {
     calculateDimensions();
 
     // 2d context
-    var ctx = canvas.getContext("2d");
+    var ctx = canvas.getContext("2d");    
 
     var loader = document.getElementById("loader");
     var container = document.getElementById("container")
